@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.3 — Demo Stage Designer
+// OMOTE mk6.4 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -92,6 +92,24 @@ function StageMark({ size=48, color=NAVY }) {
 
 function SmallMark({ size=24, color=NAVY }) {
   return (<svg width={size} height={size*0.86} viewBox="0 0 140 120" fill="none"><path d="M 28 69 L 112 66 L 113 88 L 27 91 Z" stroke={color} strokeWidth="3" fill="none"/><path d="M 16 60 L 100 57 L 112 66 L 28 69 Z" stroke={color} strokeWidth="3" fill="none"/><circle cx="60" cy="40" r="13" fill={color}/></svg>);
+}
+
+function OmoteLoader({ label }) {
+  const cl = c();
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+      <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+        {[0,1,2].map(i => (
+          <div key={i} style={{
+            width:8, height:8, borderRadius:"50%", background:cl.navy,
+            animation:`omoteLoaderPulse 1.4s ease-in-out ${i*0.2}s infinite`,
+          }}/>
+        ))}
+      </div>
+      {label && <span style={{ fontFamily:"'Source Sans 3',sans-serif", fontSize:13, fontWeight:300, color:cl.ink40 }}>{label}</span>}
+      <style>{`@keyframes omoteLoaderPulse { 0%,80%,100%{transform:scale(0.6);opacity:0.3} 40%{transform:scale(1.2);opacity:1} }`}</style>
+    </div>
+  );
 }
 
 // ─── Loading Animation ───────────────────────────────────────
@@ -222,13 +240,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.3</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.4</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.3</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.4</span>
           </div>
         )}
       </div>
@@ -582,7 +600,7 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }
         {error && <div style={{ padding:"10px 14px", marginBottom:16, background:"rgba(139,77,77,0.06)", border:"1px solid rgba(139,77,77,0.15)", ...ui(13), color:cl.akane }}>{error}</div>}
 
         <button onClick={buildWithAI} disabled={loading||(!brief.trim()&&refImages.length===0)} style={{ padding:"14px 36px", background:(brief.trim()||refImages.length>0)?cl.ink:cl.border, color:(brief.trim()||refImages.length>0)?cl.bg:cl.ink40, border:"none", ...mono(11), cursor:loading?"wait":"pointer" }}>
-          {loading ? "Building Stage..." : "Build with AI"}
+          {loading ? <OmoteLoader label="Building Stage"/> : "Build with AI"}
         </button>
       </div>
     );
@@ -624,9 +642,9 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }
           </div>
           <div style={{ flex:1, overflow:"auto", padding:18 }} onPaste={onPaste}>
             {messages.length===0 && hasContent && <div style={{ textAlign:"center", padding:"24px 16px" }}><div style={{ ...ds(18), color:cl.ink, marginBottom:8 }}>Stage built</div><p style={{ ...ui(14,300), color:cl.ink60 }}>{aiEnabled?"Describe changes or paste screenshots to refine.":"Your stage is ready."}</p></div>}
-            {messages.length===0 && !hasContent && <div style={{ textAlign:"center", padding:"36px 20px" }}><div style={{ ...ds(20), color:cl.ink, marginBottom:10 }}>Generating...</div></div>}
+            {messages.length===0 && !hasContent && <div style={{ textAlign:"center", padding:"36px 20px" }}>{loading ? <OmoteLoader label="Building your stage"/> : <><div style={{ ...ds(20), color:cl.ink, marginBottom:10 }}>Design the stage</div><p style={{ ...ui(14,300), color:cl.ink60 }}>Upload content to get started.</p></>}</div>}
             {messages.map((m,i) => <div key={i} style={{ marginBottom:14, display:"flex", flexDirection:"column", alignItems:m.role==="user"?"flex-end":"flex-start" }}><div style={{ maxWidth:"88%", padding:"10px 14px", borderRadius:m.role==="user"?"12px 12px 2px 12px":"12px 12px 12px 2px", background:m.role==="user"?cl.navy:cl.bg, color:m.role==="user"?"#fff":cl.ink, ...ui(14) }}>{m.image && <img src={m.image} alt="" style={{ maxWidth:"100%", maxHeight:140, borderRadius:6, marginBottom:m.text?8:0, display:"block" }}/>}{m.images && m.images.length>0 && <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:m.text?8:0}}>{m.images.map((img2,j)=><img key={j} src={img2} alt="" style={{width:60,height:40,objectFit:"cover",borderRadius:4,opacity:0.8}}/>)}</div>}{m.text && <div style={{ whiteSpace:"pre-wrap" }}>{m.text}</div>}</div></div>)}
-            {loading && <div style={{ padding:"10px 14px", borderRadius:"12px 12px 12px 2px", background:cl.bg, ...ui(14,300), color:cl.ink40 }}>Generating...</div>}
+            {loading && <div style={{ padding:"12px 16px", borderRadius:"12px 12px 12px 2px", background:cl.bg }}><OmoteLoader label="Generating"/></div>}
             {error && <div style={{ padding:"10px 14px", background:"rgba(139,77,77,0.06)", border:"1px solid rgba(139,77,77,0.15)", borderRadius:8, ...ui(13), color:cl.akane }}>{error}</div>}
             <div ref={chatEnd}/>
           </div>
@@ -657,7 +675,7 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }
             {hasContent && <span style={{ ...mono(8), color:cl.matcha }}>● Live</span>}
           </div>
           <div style={{ flex:1 }}>
-            {hasContent ? <StageFrame content={set.jsxCode||set.shellHtml} contentType={format} data={csvData||csvInput} company="Acme Corp" banner={set.banner}/> : <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", ...ui(15,300), color:cl.ink40 }}>{loading?"Building your stage...":"Preview will appear here"}</div>}
+            {hasContent ? <StageFrame content={set.jsxCode||set.shellHtml} contentType={format} data={csvData||csvInput} company="Acme Corp" banner={set.banner}/> : <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%" }}>{loading?<OmoteLoader label="Building your stage"/>:<span style={{ ...ui(15,300), color:cl.ink40 }}>Preview will appear here</span>}</div>}
           </div>
         </div>
       </div>
@@ -897,7 +915,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.3</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.4</div>
       </div>
     </div>
   );
