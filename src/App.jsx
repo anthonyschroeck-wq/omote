@@ -4,9 +4,11 @@ import { transform } from "sucrase";
 import OMOTE_RUNTIME from "../public/omote-runtime.js?raw";
 import { supabase } from "./supabase";
 import * as db from "./db";
+import SAMPLE_JSX from "./sample-aura.jsx?raw";
+import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.10 — Demo Stage Designer
+// OMOTE mk6.11 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -240,13 +242,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.10</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.11</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.10</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.11</span>
           </div>
         )}
       </div>
@@ -440,10 +442,11 @@ function AboutModal({ onClose, onTutorial }) {
       <div style={{ ...ui(15,300), color:LT.ink80, lineHeight:1.7, marginBottom:24 }}>
         <p style={{ marginBottom:16 }}>Omote is a stage designer for product demonstrations. Build immersive, data-driven demo environments that adapt to your audience — without touching the production product.</p>
         <div style={{ padding:"14px 18px", background:LT.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}><p style={{ ...ui(13,400), color:LT.gold }}>This is a public alpha. Some features are still in development.</p></div>
-        <p>New here? The Tutorial Stage is being redesigned and will be available soon.</p>
+        <p>New here? Take the <strong>Guided Tour</strong> — a 5-minute walkthrough of building and performing a demo.</p>
       </div>
       <div style={{ display:"flex", gap:10 }}>
-        <button onClick={onClose} style={{ flex:1, padding:"12px 0", background:DK, color:CREAM, border:"none", ...mono(10), letterSpacing:"0.12em", cursor:"pointer" }}>Get Started</button>
+        <button onClick={onClose} style={{ flex:1, padding:"12px 0", background:"none", border:`1px solid ${LT.border}`, ...mono(10), color:LT.ink60, cursor:"pointer" }}>Skip</button>
+        <button onClick={onTutorial} style={{ flex:2, padding:"12px 0", background:DK, color:CREAM, border:"none", ...mono(10), letterSpacing:"0.12em", cursor:"pointer" }}>Start Tour</button>
       </div>
     </div>
   </>);
@@ -949,6 +952,390 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
   );
 }
 
+// ─── Tutorial ─────────────────────────────────────────────────
+
+function TutorialBubble({ children, step, total, onNext, onBack, onSkip, nextLabel, wide }) {
+  return (
+    <div className="fadein" style={{
+      width: wide ? 440 : 380, padding: "24px 28px", background: "#fff", borderRadius: 10,
+      border: "1px solid #CCC6BA", boxShadow: "0 12px 40px rgba(0,0,0,0.1)",
+      fontFamily: "'Source Sans 3', sans-serif", zIndex: 600,
+    }}>
+      {children}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {Array.from({ length: total }, (_, i) => (
+            <div key={i} style={{ width: i === step ? 16 : 6, height: 6, borderRadius: 3, background: i === step ? NAVY : "#DDD7CD", transition: "all 0.3s" }} />
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {onSkip && <button onClick={onSkip} style={{ padding: "8px 16px", background: "none", border: "none", ...ui(13, 400), color: "#999", cursor: "pointer" }}>Skip Tour</button>}
+          {onBack && <button onClick={onBack} style={{ padding: "8px 16px", background: "none", border: "1px solid #CCC6BA", ...mono(10), color: "#888", cursor: "pointer" }}>Back</button>}
+          <button onClick={onNext} style={{ padding: "8px 20px", background: "#1A1A1A", color: "#F5F0E8", border: "none", ...mono(10), cursor: "pointer" }}>{nextLabel || "Next"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TutorialFlow({ onComplete }) {
+  const cl = c();
+  const [step, setStep] = useState(0);
+  const [fakeLoading, setFakeLoading] = useState(false);
+  const [pointerDemo, setPointerDemo] = useState(false);
+  const TOTAL = 13;
+
+  const next = () => setStep(s => Math.min(s + 1, TOTAL - 1));
+  const back = () => setStep(s => Math.max(s - 1, 0));
+
+  const fakeAIEdit = () => {
+    setFakeLoading(true);
+    setTimeout(() => { setFakeLoading(false); next(); }, 2800);
+  };
+
+  // ═══ Step 0: Welcome ═══
+  if (step === 0) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="fadein" style={{ textAlign: "center", maxWidth: 560, padding: "0 40px" }}>
+        <StageMark size={56} />
+        <h1 style={{ ...ds(40), marginTop: 16, marginBottom: 4 }}>Welcome to Omote</h1>
+        <p style={{ ...ui(15, 300), color: WARM, fontStyle: "italic", marginBottom: 32 }}>表 — "surface," "front," "the public face"</p>
+        <p style={{ ...ui(17, 300), color: "#4A4A44", lineHeight: 1.7, marginBottom: 16 }}>
+          Omote is a stage designer for product demonstrations. You build immersive, interactive demo environments that adapt to each audience — without touching your production product.
+        </p>
+        <p style={{ ...ui(15, 300), color: "#888880", lineHeight: 1.7, marginBottom: 40 }}>
+          This guided tour will walk you through building a complete demo stage, from uploading a prototype to performing it live with annotations. It takes about 5 minutes.
+        </p>
+        <button onClick={next} style={{ padding: "16px 48px", background: "#1A1A1A", color: CREAM, border: "none", ...mono(11), letterSpacing: "0.12em", cursor: "pointer" }}>Begin Tour</button>
+        <div style={{ marginTop: 20 }}><button onClick={onComplete} style={{ background: "none", border: "none", ...ui(13, 300), color: "#CCC6BA", cursor: "pointer" }}>Skip — I'll explore on my own</button></div>
+      </div>
+    </div>
+  );
+
+  // ═══ Step 1: Stages Concept ═══
+  if (step === 1) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete} wide>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>CONCEPT: STAGES</div>
+          <h2 style={{ ...ds(24), marginBottom: 8 }}>Every demo starts with a Stage</h2>
+          <p style={{ ...ui(15, 300), color: "#4A4A44", lineHeight: 1.7 }}>
+            A <strong>Stage</strong> is your demo environment — a container for the interfaces, data, and talking points that make up a product demonstration.
+          </p>
+          <p style={{ ...ui(14, 300), color: "#888880", lineHeight: 1.7, marginTop: 10 }}>
+            Think of it like a theater stage: you design the set, prepare the script, and then perform for your audience. Each stage can have multiple variations called <strong>Cues</strong>.
+          </p>
+        </div>
+        <div style={{ padding: "14px 18px", background: `${NAVY}08`, border: `1px solid ${NAVY}15`, borderRadius: 6 }}>
+          <div style={{ ...ui(13, 400), color: NAVY }}>For this tour, we'll build a demo of "Aura Intelligence" — an AI-powered customer analytics platform.</div>
+        </div>
+      </TutorialBubble>
+    </div>
+  );
+
+  // ═══ Step 2: Build Methods ═══
+  if (step === 2) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete} wide>
+        <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>HOW TO BUILD</div>
+        <h2 style={{ ...ds(24), marginBottom: 12 }}>Two ways to build your Stage</h2>
+        <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+          <div style={{ flex: 1, padding: "16px", background: "#F7F5F0", border: "1px solid #E8E4DC", borderRadius: 6 }}>
+            <div style={{ ...ui(15, 600), marginBottom: 4 }}>Build with AI</div>
+            <div style={{ ...ui(13, 300), color: "#888880" }}>Upload screenshots, describe your product, and AI assembles the demo. Currently in <strong>beta</strong> behind a feature flag.</div>
+          </div>
+          <div style={{ flex: 1, padding: "16px", background: `${NAVY}06`, border: `1px solid ${NAVY}15`, borderRadius: 6 }}>
+            <div style={{ ...ui(15, 600), color: NAVY, marginBottom: 4 }}>Upload JSX</div>
+            <div style={{ ...ui(13, 300), color: "#4A4A44" }}>Bring a React component. Omote provides the runtime — React 18, Recharts, D3, Tailwind, and more.</div>
+          </div>
+        </div>
+        <p style={{ ...ui(14, 300), color: "#888880" }}>We'll use the <strong>JSX upload</strong> path for this tour. In the next step, we'll load a pre-built sample.</p>
+      </TutorialBubble>
+    </div>
+  );
+
+  // ═══ Step 3: Upload JSX ═══
+  if (step === 3) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete} nextLabel="Load Sample JSX" wide>
+        <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>STEP: UPLOAD</div>
+        <h2 style={{ ...ds(24), marginBottom: 8 }}>Loading a React component</h2>
+        <p style={{ ...ui(15, 300), color: "#4A4A44", lineHeight: 1.7, marginBottom: 16 }}>
+          In a normal workflow, you'd drag a <code style={{ ...mono(12), padding: "1px 6px", background: "#F0ECE4", border: "1px solid #E4DED4" }}>.jsx</code> file into the upload zone.
+          For this tour, we'll load <strong>Aura Intelligence</strong> — a pre-built customer analytics platform with three interactive tabs.
+        </p>
+        <div style={{ padding: "14px 18px", background: "#F7F5F0", border: "1px solid #E8E4DC", borderRadius: 6 }}>
+          <div style={{ ...mono(9), color: "#888880", marginBottom: 6 }}>WHAT'S IN THE SAMPLE</div>
+          <div style={{ ...ui(14, 300), color: "#4A4A44", lineHeight: 1.7 }}>
+            Dashboard with live metrics · AI Signals with risk/opportunity detection · Conversation sentiment analysis · Interactive hover states, click-to-expand, and tab navigation
+          </div>
+        </div>
+      </TutorialBubble>
+    </div>
+  );
+
+  // ═══ Step 4: Preview ═══
+  if (step === 4) return (
+    <div style={{ minHeight: "100vh", background: "#fff", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", minHeight: 52, borderBottom: `1px solid ${cl.borderLight}`, background: cl.surface }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <SmallMark size={18} />
+          <h2 style={{ ...ds(18), color: cl.ink }}>Aura Intelligence</h2>
+          <span style={{ ...mono(8), color: cl.matcha }}>● Live Preview</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, position: "relative" }}>
+        <StageFrame content={SAMPLE_JSX} contentType="jsx" data={[]} company="Acme Corp" banner="" />
+        <div style={{ position: "absolute", bottom: 24, right: 24 }}>
+          <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete}>
+            <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>LIVE PREVIEW</div>
+            <h2 style={{ ...ds(22), marginBottom: 8 }}>Your demo is live</h2>
+            <p style={{ ...ui(14, 300), color: "#4A4A44", lineHeight: 1.7 }}>
+              This is exactly what your audience sees during a performance. Click around — the tabs, hover states, and interactions are all fully functional. Omote's JSX runtime handles React, hooks, and styled components.
+            </p>
+          </TutorialBubble>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ═══ Step 5: First Cue ═══
+  if (step === 5) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete} nextLabel='Save as "Current Product"' wide>
+        <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>CONCEPT: CUES</div>
+        <h2 style={{ ...ds(24), marginBottom: 8 }}>Save your work as a Cue</h2>
+        <p style={{ ...ui(15, 300), color: "#4A4A44", lineHeight: 1.7, marginBottom: 12 }}>
+          A <strong>Cue</strong> is a named, editable version of your stage. Think of it like a branch — each cue is an independent instance you can customize for different audiences.
+        </p>
+        <div style={{ padding: "14px 18px", background: "#F7F5F0", border: "1px solid #E8E4DC", borderRadius: 6 }}>
+          <div style={{ ...ui(14, 300), color: "#4A4A44" }}>
+            Common pattern: Create a <strong>"Current Product"</strong> cue showing what exists today, then clone it into a <strong>"Roadmap"</strong> cue showing future features — with a Safe Harbor banner.
+          </div>
+        </div>
+      </TutorialBubble>
+    </div>
+  );
+
+  // ═══ Step 6: Cues Explained ═══
+  if (step === 6) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete} wide>
+        <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>YOUR STAGE</div>
+        <h2 style={{ ...ds(24), marginBottom: 12 }}>Stage → Cues</h2>
+        <div style={{ padding: "16px", background: "#fff", border: "1px solid #CCC6BA", borderRadius: 6, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <OIcon name="compass" size={18} color={NAVY} />
+            <span style={{ ...ds(18) }}>Aura Intelligence</span>
+          </div>
+          <div style={{ marginLeft: 28 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: `${NAVY}06`, border: `1px solid ${NAVY}12`, borderRadius: 4, marginBottom: 6 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4A6A48" }} />
+              <span style={{ ...ui(14, 500) }}>Current Product</span>
+              <span style={{ ...mono(8), color: "#4A6A48" }}>● Ready</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", border: "1px dashed #CCC6BA", borderRadius: 4, opacity: 0.5 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#CCC6BA" }} />
+              <span style={{ ...ui(14, 400), color: "#888880" }}>Roadmap — we'll create this next</span>
+            </div>
+          </div>
+        </div>
+        <p style={{ ...ui(14, 300), color: "#888880" }}>Each cue carries its own content, banner, and speaker notes. Edit one without affecting the others.</p>
+      </TutorialBubble>
+    </div>
+  );
+
+  // ═══ Step 7: Clone Cue ═══
+  if (step === 7) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <TutorialBubble step={step} total={TOTAL} onNext={() => fakeAIEdit()} onBack={back} onSkip={onComplete} nextLabel='Clone & Edit with AI' wide>
+        <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>CREATING A VARIANT</div>
+        <h2 style={{ ...ds(24), marginBottom: 8 }}>Clone into a Roadmap cue</h2>
+        <p style={{ ...ui(15, 300), color: "#4A4A44", lineHeight: 1.7, marginBottom: 12 }}>
+          We'll clone "Current Product" into a new cue called <strong>"Roadmap."</strong> This copies all the content so you start with an identical base, then diverge.
+        </p>
+        <p style={{ ...ui(14, 300), color: "#888880", lineHeight: 1.7, marginBottom: 12 }}>
+          With the <strong>AI Builder</strong> (beta), you'd describe the change you want: <em>"Add a Roadmap tab showing upcoming features with progress bars and status badges."</em>
+        </p>
+        <div style={{ padding: "12px 16px", background: `${NAVY}06`, border: `1px solid ${NAVY}15`, borderRadius: 6 }}>
+          <div style={{ ...mono(8), color: NAVY, marginBottom: 4 }}>AI PROMPT (SIMULATED)</div>
+          <div style={{ ...ui(14, 300), color: "#4A4A44", fontStyle: "italic" }}>"Add a Roadmap tab to the navigation. Show 6 upcoming features with titles, descriptions, status badges (In Development / Design / Research / Planned), and progress bars."</div>
+        </div>
+      </TutorialBubble>
+    </div>
+  );
+
+  // ═══ Step 8: AI Loading ═══
+  if (step === 8 && fakeLoading) return (
+    <div style={{ minHeight: "100vh", background: "#fff", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "0 28px", minHeight: 52, borderBottom: `1px solid ${cl.borderLight}`, background: cl.surface }}>
+        <SmallMark size={18} /><span style={{ ...ds(18), color: cl.ink, marginLeft: 12 }}>Aura Intelligence</span>
+        <span style={{ ...mono(9), padding: "2px 8px", background: cl.navyWash, color: cl.navy, marginLeft: 12 }}>Cue</span>
+        <span style={{ ...ui(14, 500), color: cl.ink, marginLeft: 8 }}>Roadmap</span>
+      </div>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <OmoteLoader label="AI is adding the Roadmap tab..." />
+          <p style={{ ...ui(13, 300), color: cl.ink20, marginTop: 16 }}>Analyzing component structure · Adding navigation · Generating feature cards</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ═══ Step 8: AI Result ═══
+  if (step === 8) return (
+    <div style={{ minHeight: "100vh", background: "#fff", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", minHeight: 52, borderBottom: `1px solid ${cl.borderLight}`, background: cl.surface }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <SmallMark size={18} />
+          <h2 style={{ ...ds(18), color: cl.ink }}>Aura Intelligence</h2>
+          <span style={{ ...mono(9), padding: "2px 8px", background: cl.navyWash, color: cl.navy }}>Cue</span>
+          <span style={{ ...ui(14, 500), color: cl.ink }}>Roadmap</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, position: "relative" }}>
+        <StageFrame content={SAMPLE_JSX_ROADMAP} contentType="jsx" data={[]} company="Acme Corp" banner="" />
+        <div style={{ position: "absolute", bottom: 24, right: 24 }}>
+          <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete}>
+            <div style={{ ...mono(9), color: "#4A6A48", marginBottom: 10 }}>AI EDIT COMPLETE</div>
+            <h2 style={{ ...ds(22), marginBottom: 8 }}>Roadmap tab added</h2>
+            <p style={{ ...ui(14, 300), color: "#4A4A44", lineHeight: 1.7 }}>
+              Click <strong>"Roadmap"</strong> in the nav above to see the new tab. The AI added 6 feature cards with progress indicators, status badges, and hover effects — all from a single prompt.
+            </p>
+          </TutorialBubble>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ═══ Step 9: Banner ═══
+  if (step === 9) return (
+    <div style={{ minHeight: "100vh", background: "#fff", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "0 28px", minHeight: 52, borderBottom: `1px solid ${cl.borderLight}`, background: cl.surface }}>
+        <SmallMark size={18} /><span style={{ ...ds(18), color: cl.ink, marginLeft: 12 }}>Aura Intelligence</span>
+        <span style={{ ...mono(9), padding: "2px 8px", background: cl.navyWash, color: cl.navy, marginLeft: 12 }}>Roadmap</span>
+      </div>
+      <div dangerouslySetInnerHTML={{ __html: bannerToHtml({ text: "Safe Harbor: Features shown are forward-looking and subject to change", bg: "#F0EBDB", color: "#7A6518", border: "#E8D9A0", align: "center", icon: "shield" }) }} />
+      <div style={{ flex: 1, position: "relative" }}>
+        <StageFrame content={SAMPLE_JSX_ROADMAP} contentType="jsx" data={[]} company="Acme Corp" banner="" />
+        <div style={{ position: "absolute", top: 24, right: 24 }}>
+          <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete} wide>
+            <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>BANNERS</div>
+            <h2 style={{ ...ds(22), marginBottom: 8 }}>Set expectations with a Banner</h2>
+            <p style={{ ...ui(14, 300), color: "#4A4A44", lineHeight: 1.7, marginBottom: 12 }}>
+              Banners appear at the top of the demo during performance. Use them for Safe Harbor disclaimers, confidentiality notices, or context-setting.
+            </p>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {BANNER_PRESETS.map(p => (
+                <span key={p.id} style={{ padding: "3px 10px", background: p.bg, border: `1px solid ${p.border}`, color: p.color, ...mono(8), borderRadius: 3 }}>{p.label}</span>
+              ))}
+            </div>
+          </TutorialBubble>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ═══ Step 10: Pointer Setup ═══
+  if (step === 10) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} onSkip={onComplete} wide>
+        <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>TOOLS: POINTER</div>
+        <h2 style={{ ...ds(24), marginBottom: 8 }}>Annotate during your demo</h2>
+        <p style={{ ...ui(15, 300), color: "#4A4A44", lineHeight: 1.7, marginBottom: 16 }}>
+          The <strong>Pointer</strong> lets you draw, highlight, and spotlight during a live performance. Everything is visible to your audience via screen share.
+        </p>
+        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+          {[{ name: "Pen", desc: "Freehand with crayon texture", key: "D" }, { name: "Box", desc: "Rectangular highlights", key: "B" }, { name: "Spotlight", desc: "Dim everything except focus area", key: "S" }].map(t => (
+            <div key={t.name} style={{ flex: 1, padding: "12px", background: "#F7F5F0", border: "1px solid #E8E4DC", borderRadius: 6, textAlign: "center" }}>
+              <div style={{ ...ui(14, 600), marginBottom: 2 }}>{t.name}</div>
+              <div style={{ ...ui(11, 300), color: "#888880", marginBottom: 4 }}>{t.desc}</div>
+              <kbd style={{ ...mono(10), padding: "1px 6px", background: "#fff", border: "1px solid #DDD7CD" }}>{t.key}</kbd>
+            </div>
+          ))}
+        </div>
+        <p style={{ ...ui(13, 300), color: "#888880" }}>
+          All hotkeys are remappable — including multi-key combos like Ctrl+Z. Configure in Settings → Pointer.
+        </p>
+      </TutorialBubble>
+    </div>
+  );
+
+  // ═══ Step 11: Launch Performance ═══
+  if (step === 11) return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <TutorialBubble step={step} total={TOTAL} onNext={() => { setPointerDemo(true); next(); }} onBack={back} onSkip={onComplete} nextLabel="Launch Performance" wide>
+        <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>SHOWTIME</div>
+        <h2 style={{ ...ds(24), marginBottom: 8 }}>Ready to perform</h2>
+        <p style={{ ...ui(15, 300), color: "#4A4A44", lineHeight: 1.7, marginBottom: 12 }}>
+          When you click <strong>Perform</strong> on a cue, Omote goes full-screen. Your audience sees only the demo — no Omote UI, no builder chrome. Just the product experience.
+        </p>
+        <p style={{ ...ui(14, 300), color: "#888880", lineHeight: 1.7 }}>
+          The Pointer toolbar hides in the bottom-left corner. Hover the Omote mark to reveal it. The <strong>Storyteller</strong> companion extension (configured separately) shows your speaker notes in a side panel — invisible to screen share.
+        </p>
+      </TutorialBubble>
+    </div>
+  );
+
+  // ═══ Step 12: Pointer Demo (Performance Mode) ═══
+  if (step === 12) return (
+    <div style={{ minHeight: "100vh", background: "#fff", position: "relative" }}>
+      <div dangerouslySetInnerHTML={{ __html: bannerToHtml({ text: "Safe Harbor: Features shown are forward-looking and subject to change", bg: "#F0EBDB", color: "#7A6518", border: "#E8D9A0", align: "center", icon: "shield" }) }} />
+      <div style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0 }}>
+        <StageFrame content={SAMPLE_JSX_ROADMAP} contentType="jsx" data={[]} company="Acme Corp" banner="" />
+      </div>
+
+      {/* Pointer hint overlay */}
+      <div className="fadein" style={{ position: "fixed", bottom: 80, left: 24, zIndex: 500 }}>
+        <TutorialBubble step={step} total={TOTAL} onNext={next} onBack={back} nextLabel="Complete Tour">
+          <div style={{ ...mono(9), color: NAVY, marginBottom: 10 }}>DURING PERFORMANCE</div>
+          <h2 style={{ ...ds(20), marginBottom: 8 }}>The Pointer toolbar</h2>
+          <p style={{ ...ui(14, 300), color: "#4A4A44", lineHeight: 1.7 }}>
+            See the Omote mark in the bottom-left? Hover it to reveal the pointer toolbar. Press <kbd style={{ ...mono(10), padding: "1px 5px", background: "#F0ECE4", border: "1px solid #DDD7CD" }}>P</kbd> to toggle the pointer on/off.
+          </p>
+          <p style={{ ...ui(13, 300), color: "#888880", marginTop: 8 }}>
+            Click the Omote mark to exit performance and return to the builder.
+          </p>
+        </TutorialBubble>
+      </div>
+
+      {/* Fake ghost bar */}
+      <div style={{ position: "fixed", bottom: 12, left: 12, zIndex: 400, display: "flex", alignItems: "center", gap: 0 }}>
+        <div style={{ padding: "8px 10px", opacity: 0.8 }}><SmallMark size={18} /></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "5px 10px", background: "rgba(26,26,26,0.8)", backdropFilter: "blur(8px)", borderRadius: 6 }}>
+          <span style={{ ...mono(8), color: "rgba(255,255,255,0.7)", padding: "4px 8px" }}>OFF</span>
+          <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)", margin: "0 3px" }} />
+          <span style={{ ...mono(8), color: "#fff", padding: "4px 8px", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "#C4A855" }} />D</span>
+          <span style={{ ...mono(8), color: "#fff", padding: "4px 8px" }}><span style={{ display: "inline-block", width: 8, height: 6, border: "1px solid #fff", marginRight: 4 }} />B</span>
+          <span style={{ ...mono(8), color: "#fff", padding: "4px 8px" }}>S</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ═══ Step 13 (index 12 is last): Complete ═══
+  return (
+    <div style={{ minHeight: "100vh", background: CREAM, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="fadein" style={{ textAlign: "center", maxWidth: 520, padding: "0 40px" }}>
+        <StageMark size={56} />
+        <h1 style={{ ...ds(36), marginTop: 16, marginBottom: 8 }}>You're ready</h1>
+        <p style={{ ...ui(16, 300), color: "#4A4A44", lineHeight: 1.7, marginBottom: 32 }}>
+          You've built a stage, uploaded a demo, created cues for different audiences, edited with AI, set a Safe Harbor banner, and explored the live annotation tools.
+        </p>
+        <div style={{ padding: "20px 24px", background: "#fff", border: "1px solid #CCC6BA", borderRadius: 8, marginBottom: 32, textAlign: "left" }}>
+          <div style={{ ...mono(9), color: NAVY, marginBottom: 12 }}>WHAT'S NEXT</div>
+          <div style={{ ...ui(14, 300), color: "#4A4A44", lineHeight: 1.8 }}>
+            <div style={{ marginBottom: 8 }}><strong>Create your first real Stage</strong> — upload your own JSX or build with AI (if enabled).</div>
+            <div style={{ marginBottom: 8 }}><strong>Set up Storyteller</strong> — add speaker notes to cues and install the Chrome Companion for a teleprompter during demos.</div>
+            <div><strong>Configure your Pointer</strong> — customize pen colors, hotkeys, and the new box tool in Settings.</div>
+          </div>
+        </div>
+        <button onClick={onComplete} style={{ padding: "16px 48px", background: "#1A1A1A", color: CREAM, border: "none", ...mono(11), letterSpacing: "0.12em", cursor: "pointer" }}>Start Building</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Login ───────────────────────────────────────────────────
 
 function Login({ onLogin }) {
@@ -982,7 +1369,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.10</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.11</div>
       </div>
     </div>
   );
@@ -1003,7 +1390,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
       <div style={{ maxWidth:800, margin:"0 auto", padding:"48px 40px" }}>
         <div className="breathe" style={{ marginBottom:48 }}><h2 style={{...ds(38),color:cl.ink,marginBottom:8}}>Stages</h2><p style={{...ui(17,300),color:cl.ink60}}>Select a stage to perform, or build a new one.</p></div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-          {!hasTutorial && <div className="breathe" style={{ animationDelay:"0.05s" }}><div style={{ padding:"24px 28px", border:`2px dashed ${cl.border}`, background:"transparent", opacity:0.5, cursor:"not-allowed" }}><div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}><span style={{ fontSize:20 }}>🎓</span><h3 style={{ ...ds(22), color:cl.ink40 }}>Tutorial Stage</h3></div><p style={{ ...ui(14,300), color:cl.ink40 }}>Coming soon — being redesigned.</p></div></div>}
+          {!hasTutorial && <div className="breathe" style={{ animationDelay:"0.05s" }}><div onClick={onTutorial} style={{ padding:"24px 28px", border:`2px dashed ${cl.navy}`, background:cl.navyWash, cursor:"pointer", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}><div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}><span style={{ fontSize:20 }}>🎓</span><h3 style={{ ...ds(22), color:cl.navy }}>Guided Tour</h3></div><p style={{ ...ui(14,300), color:cl.ink60 }}>5-minute walkthrough — build a demo, create cues, and perform live.</p></div></div>}
           {stages.map((s,i) => (
             <div key={s.id} className="breathe" style={{ animationDelay:`${0.1+i*0.05}s` }}>
               <div style={{ padding:"24px 28px", border:`1px solid ${cl.borderLight}`, background:cl.surface, transition:"all 0.3s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight}}>
@@ -1707,7 +2094,7 @@ function HelpPage({ onTutorial }) {
           <p style={{ ...ui(13,300), color:cl.gold }}>Some features are still in development. Stages persist via Supabase.</p>
         </div>
 
-        <button disabled style={{ width:"100%", padding:"14px 0", background:cl.border, color:cl.ink40, border:"none", ...mono(10), cursor:"not-allowed" }}>Tutorial Stage — Coming Soon</button>
+        <button onClick={onTutorial} style={{ width:"100%", padding:"14px 0", background:cl.ink, color:cl.bg, border:"none", ...mono(10), cursor:"pointer" }}>Start Guided Tour</button>
       </div>
     </div>
   );
@@ -1939,13 +2326,13 @@ export default function Omote() {
   };
 
   const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setScreen("hub"); };
-  const isLoggedIn = screen !== "login" && screen !== "loading";
+  const isLoggedIn = screen !== "login" && screen !== "loading" && screen !== "tutorial";
   const isPerforming = screen === "perform";
   const theme = { mode: themeMode };
 
   const startTutorial = () => {
-    const ts = { id:"tutorial-"+Date.now(), name:"Tutorial Stage", description:"Guided walkthrough with sample data", status:"draft", icon:"compass", csvData:null, columns:[], csvFilename:null, set:{}, cues:[], isTutorial:true };
-    setStages(p => [ts, ...p]); setActiveStage(ts); setShowAbout(false); setScreen("backstage");
+    setShowAbout(false);
+    setScreen("tutorial");
   };
 
   // ─── Stage CRUD (persists to Supabase) ───
@@ -2057,6 +2444,7 @@ export default function Omote() {
           <style>{STYLES}</style>
 
           {screen==="login" && <Login onLogin={handleLogin}/>}
+          {screen==="tutorial" && <TutorialFlow onComplete={()=>setScreen("hub")}/>}
 
           {isLoggedIn && !isPerforming && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={{...user, role:effectiveRole}} stages={visibleStages} activeStageId={activeStage?.id} onLogout={handleLogout}/>}
 
