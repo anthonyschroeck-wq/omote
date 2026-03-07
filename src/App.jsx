@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk7.1 — Demo Stage Designer
+// OMOTE mk7.2 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -246,13 +246,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.1</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.2</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.1</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.2</span>
           </div>
         )}
       </div>
@@ -1061,7 +1061,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.1</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.2</div>
       </div>
     </div>
   );
@@ -2082,35 +2082,45 @@ function HelpPage({ onTutorial }) {
   const cl = c();
   return (
     <div style={{ height:"100%", overflow:"auto", background:cl.bg, padding:"48px 40px" }}>
-      <div style={{ maxWidth:540, margin:"0 auto" }}>
+      <div style={{ maxWidth:580, margin:"0 auto" }}>
         <div style={{ textAlign:"center", marginBottom:36 }}>
           <StageMark size={44}/>
-          <h2 style={{ ...ds(30), marginTop:12, marginBottom:4 }}>Welcome to Omote</h2>
+          <h2 style={{ ...ds(30), marginTop:12, marginBottom:4 }}>Omote</h2>
           <p style={{ ...ui(14,300), color:WARM, fontStyle:"italic" }}>表 — "surface," "front," "the public face"</p>
         </div>
 
         <div style={{ ...ui(15,300), color:cl.ink80, lineHeight:1.7, marginBottom:28 }}>
-          <p style={{ marginBottom:16 }}>Omote is a stage designer for product demonstrations. Build immersive, data-driven demo environments that adapt to your audience — without touching the production product.</p>
+          <p>Omote is a stage designer for product demonstrations. Build interactive, branded demo environments tailored to each audience — without touching your production product. Manage a team of sellers, track engagement, and control the entire demo lifecycle from one platform.</p>
         </div>
 
+        {/* Core Concepts */}
         <div style={{ padding:"20px 24px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
-          <div style={{ ...mono(9), color:cl.ink40, marginBottom:12 }}>Key Concepts</div>
-          <div style={{ marginBottom:12 }}><span style={{ ...ui(14,500), color:cl.ink }}>Stage</span><span style={{ ...ui(14,300), color:cl.ink60 }}> — A demo environment with its own data, design, and audience context.</span></div>
-          <div style={{ marginBottom:12 }}><span style={{ ...ui(14,500), color:cl.ink }}>Set</span><span style={{ ...ui(14,300), color:cl.ink60 }}> — The visual shell your audience sees. Built from HTML or JSX.</span></div>
-          <div style={{ marginBottom:12 }}><span style={{ ...ui(14,500), color:cl.ink }}>Cue</span><span style={{ ...ui(14,300), color:cl.ink60 }}> — A named version of the set. Each cue can have its own banner and speaker notes.</span></div>
-          <div style={{ marginBottom:12 }}><span style={{ ...ui(14,500), color:cl.ink }}>Pointer</span><span style={{ ...ui(14,300), color:cl.ink60 }}> — Pen and spotlight annotations during live performance. Visible to your audience via screen share.</span></div>
-          <div><span style={{ ...ui(14,500), color:cl.ink }}>Storyteller</span><span style={{ ...ui(14,300), color:cl.ink60 }}> — Speaker notes visible only to you via the Companion extension. Invisible to screen share.</span></div>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Core Concepts</div>
+          {[
+            ["Stage", "A demo environment — the container for your product demonstration. Each stage has its own name, icon, and set of cues."],
+            ["Cue", "A named, editable version of your stage. Clone cues for different audiences — 'Current Product' for today's demo, 'Roadmap' for forward-looking features. Each cue is independent."],
+            ["Banner", "A customizable bar shown during performance. Use it for Safe Harbor disclaimers, confidentiality notices, or context. Choose from 6 color presets, 8 icons, and 3 alignments."],
+            ["Pointer", "Live annotation tools visible to your audience via screen share. Three tools: Pen (freehand crayon), Box (rectangular highlight), and Spotlight (radial focus). All hotkeys remappable, including multi-key combos."],
+            ["Storyteller", "Speaker notes visible only to you via the Omote Companion Chrome extension. Your audience never sees them — the extension runs in a side panel invisible to screen share."],
+          ].map(([term, desc], i) => (
+            <div key={i} style={{ marginBottom:i<4?14:0 }}>
+              <span style={{ ...ui(14,600), color:cl.ink }}>{term}</span>
+              <span style={{ ...ui(14,300), color:cl.ink60 }}> — {desc}</span>
+            </div>
+          ))}
         </div>
 
+        {/* Build Flow */}
         <div style={{ padding:"20px 24px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
-          <div style={{ ...mono(9), color:cl.ink40, marginBottom:12 }}>Workflow</div>
-          {["Create a Stage — name it, choose an icon, add a description.",
-            "Upload Data — CSV with column headers. Or skip if your HTML has its own.",
-            "Build the Set — import HTML or JSX. The set is your demo's visual shell.",
-            "Create Cues — name your first cue from the set. Add more for different audiences.",
-            "Add Notes — speaker notes per cue for the Storyteller companion.",
-            "Publish — make the stage available for performance.",
-            "Perform — full-screen immersive demo with pointer and storyteller."
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Building a Stage</div>
+          {[
+            "Create a Stage — name, icon, description. This is your root folder.",
+            "Choose your build path — Upload JSX (bring a React component) or Build with AI (describe your product, upload screenshots — beta, requires AI Builder flag).",
+            "Preview and refine — the Canvas shows a live preview. For AI builds, use the chat to iterate. For JSX, the runtime supports React 18, Recharts, D3, Lodash, and Tailwind.",
+            "Save as your first Cue — name it (e.g. 'Current Product'). This creates your first performable version.",
+            "Create more Cues — clone from an existing cue or start from scratch. Each cue carries its own content, banner, and notes.",
+            "Add Speaker Notes — per-cue talking points in the Notes tab. These feed into the Storyteller companion.",
+            "Publish — makes the stage available for performance from the Hub.",
           ].map((step, i) => (
             <div key={i} style={{ display:"flex", gap:12, marginBottom:10 }}>
               <div style={{ width:22, height:22, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(9), color:cl.navy, flexShrink:0, marginTop:1 }}>{i+1}</div>
@@ -2119,9 +2129,72 @@ function HelpPage({ onTutorial }) {
           ))}
         </div>
 
-        <div style={{ padding:"20px 24px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(14,400), color:cl.gold, marginBottom:4 }}>This is a public alpha prototype.</p>
-          <p style={{ ...ui(13,300), color:cl.gold }}>Some features are still in development. Stages persist via Supabase.</p>
+        {/* Performing */}
+        <div style={{ padding:"20px 24px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Performing a Demo</div>
+          {[
+            "From the Hub, click Perform on a published stage. Set your audience context — company name, persona, and optionally link to a Salesforce Account/Opportunity (prototype).",
+            "Select which Cue to perform. Each cue can have a different banner and content variant.",
+            "Performance mode is full-screen — no Omote chrome. Your audience sees only the demo.",
+            "The Pointer toolbar hides in the bottom-left corner. Hover the Omote mark to reveal it. Press P (or your custom hotkey) to toggle annotation tools.",
+            "Preview mode is available from the cue list — click the play button to skip audience setup and go straight to full-screen.",
+          ].map((step, i) => (
+            <div key={i} style={{ display:"flex", gap:12, marginBottom:10 }}>
+              <div style={{ width:6, height:6, borderRadius:"50%", background:cl.navy, flexShrink:0, marginTop:7 }}/>
+              <span style={{ ...ui(14,300), color:cl.ink80 }}>{step}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Admin */}
+        <div style={{ padding:"20px 24px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Admin & Team Management</div>
+          {[
+            ["Users", "Invite team members by email. Assign stages to specific sellers. Impersonate any user to verify their experience."],
+            ["Roles", "Three roles: User (performs assigned stages), Admin (creates/manages stages and users), Super-Admin (all admin capabilities plus user-level feature flags like AI Builder)."],
+            ["Stage Sharing", "Share stages with specific users from the Hub. Users only see stages assigned to them. Admins see everything."],
+            ["Analytics", "Demo engagement metrics — sessions by account, by cue, by seller. Seller activity leaderboard, persona coverage heatmap, and cue-to-outcome correlation (prototype)."],
+            ["Integrations", "Salesforce integration planned — auto-populate audience context, log sessions as Activities, track cue win rates. Currently in prototype."],
+          ].map(([term, desc], i) => (
+            <div key={i} style={{ marginBottom:i<4?14:0 }}>
+              <span style={{ ...ui(14,600), color:cl.ink }}>{term}</span>
+              <span style={{ ...ui(14,300), color:cl.ink60 }}> — {desc}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Settings */}
+        <div style={{ padding:"20px 24px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Personalization</div>
+          {[
+            ["Theme", "Light and dark mode. Persists across sessions."],
+            ["Pointer Config", "Pen color (6 presets + custom), pen width, spotlight radius, auto-fade on/off with configurable duration, and box tool. All settings persist per user."],
+            ["Hotkeys", "Every pointer hotkey is remappable — single keys or combos like Ctrl+Z. Click the key field and press your preferred shortcut."],
+            ["Password", "Change your password anytime from Settings."],
+          ].map(([term, desc], i) => (
+            <div key={i} style={{ marginBottom:i<3?12:0 }}>
+              <span style={{ ...ui(14,600), color:cl.ink }}>{term}</span>
+              <span style={{ ...ui(14,300), color:cl.ink60 }}> — {desc}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Keyboard Shortcuts */}
+        <div style={{ padding:"20px 24px", background:cl.navyWash, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.navy, marginBottom:12 }}>Default Keyboard Shortcuts</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+            {[["P","Toggle Pointer"],["D","Pen Tool"],["B","Box Tool"],["S","Spotlight"],["Ctrl+Z","Undo"],["Ctrl+Shift+C","Clear All"],["Esc","Deactivate Pointer"]].map(([k,l]) => (
+              <div key={k} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <kbd style={{ ...mono(9), padding:"2px 7px", background:cl.surface, border:`1px solid ${cl.borderLight}`, minWidth:32, textAlign:"center" }}>{k}</kbd>
+                <span style={{ ...ui(13,300), color:cl.ink60 }}>{l}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.2</p>
+          <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
         <button disabled style={{ width:"100%", padding:"14px 0", background:cl.border, color:cl.ink40, border:"none", ...mono(10), cursor:"not-allowed" }}>Guided Tour — Coming Soon</button>
