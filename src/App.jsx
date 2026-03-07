@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.12 — Demo Stage Designer
+// OMOTE mk6.13 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -242,13 +242,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.12</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.13</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.12</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.13</span>
           </div>
         )}
       </div>
@@ -1010,14 +1010,13 @@ function TutorialFlow({ onComplete }) {
 
   // ═══ 1: Live Demo — interact with it ═══
   if (step === 1) return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#fff" }}>
-      <div style={{ display: "flex", alignItems: "center", padding: "0 24px", minHeight: 44, borderBottom: "1px solid #E8E4DC", background: "#F5F0E8", flexShrink: 0 }}>
+    <div style={{ height: "100vh", overflow: "hidden", background: "#fff" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "0 24px", height: 44, borderBottom: "1px solid #E8E4DC", background: "#F5F0E8" }}>
         <SmallMark size={16} /><span style={{ ...ds(16), color: "#1A1A1A", marginLeft: 10 }}>Aura Intelligence</span>
         <span style={{ ...mono(8), color: "#4A6A48", marginLeft: 10 }}>● Live</span>
       </div>
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        <iframe style={{ display: "none" }} />
-        <div style={{ position: "absolute", inset: 0 }}>
+      <div style={{ height: "calc(100vh - 44px)", position: "relative" }}>
+        <div style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}>
           <StageFrame content={SAMPLE_JSX} contentType="jsx" data={[]} company="Acme Corp" banner="" />
         </div>
         <div style={{ position: "absolute", bottom: 20, left: 20, zIndex: 500 }}>
@@ -1075,25 +1074,25 @@ function TutorialFlow({ onComplete }) {
 
   // ═══ 4: Loading / Result ═══
   if (step === 4 && fakeLoading) return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#fff" }}>
-      <div style={{ display: "flex", alignItems: "center", padding: "0 24px", minHeight: 44, borderBottom: "1px solid #E8E4DC", background: "#F5F0E8", flexShrink: 0 }}>
+    <div style={{ height: "100vh", overflow: "hidden", background: "#fff" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "0 24px", height: 44, borderBottom: "1px solid #E8E4DC", background: "#F5F0E8" }}>
         <SmallMark size={16} /><span style={{ ...ds(16), color: "#1A1A1A", marginLeft: 10 }}>Aura Intelligence</span>
         <span style={{ ...mono(8), padding: "2px 8px", background: NAVY + "10", color: NAVY, marginLeft: 10 }}>Roadmap</span>
       </div>
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ height: "calc(100vh - 44px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <OmoteLoader label="AI is adding the Roadmap tab..." />
       </div>
     </div>
   );
 
   if (step === 4) return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#fff" }}>
-      <div style={{ display: "flex", alignItems: "center", padding: "0 24px", minHeight: 44, borderBottom: "1px solid #E8E4DC", background: "#F5F0E8", flexShrink: 0 }}>
+    <div style={{ height: "100vh", overflow: "hidden", background: "#fff" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "0 24px", height: 44, borderBottom: "1px solid #E8E4DC", background: "#F5F0E8" }}>
         <SmallMark size={16} /><span style={{ ...ds(16), color: "#1A1A1A", marginLeft: 10 }}>Aura Intelligence</span>
         <span style={{ ...mono(8), padding: "2px 8px", background: NAVY + "10", color: NAVY, marginLeft: 10 }}>Roadmap</span>
       </div>
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0 }}>
+      <div style={{ height: "calc(100vh - 44px)", position: "relative" }}>
+        <div style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}>
           <StageFrame content={SAMPLE_JSX_ROADMAP} contentType="jsx" data={[]} company="Acme Corp" banner="" />
         </div>
         <div style={{ position: "absolute", bottom: 20, right: 20, zIndex: 500 }}>
@@ -1111,10 +1110,10 @@ function TutorialFlow({ onComplete }) {
 
   // ═══ 5: Banner ═══
   if (step === 5) return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#fff" }}>
-      <div style={{ flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: bannerToHtml({ text: "Safe Harbor: Features shown are forward-looking and subject to change", bg: "#F0EBDB", color: "#7A6518", border: "#E8D9A0", align: "center", icon: "shield" }) }} />
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0 }}>
+    <div style={{ height: "100vh", overflow: "hidden", background: "#fff" }}>
+      <div style={{ height: 40 }} dangerouslySetInnerHTML={{ __html: bannerToHtml({ text: "Safe Harbor: Features shown are forward-looking and subject to change", bg: "#F0EBDB", color: "#7A6518", border: "#E8D9A0", align: "center", icon: "shield" }) }} />
+      <div style={{ height: "calc(100vh - 40px)", position: "relative" }}>
+        <div style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}>
           <StageFrame content={SAMPLE_JSX_ROADMAP} contentType="jsx" data={[]} company="Acme Corp" banner="" />
         </div>
         <div style={{ position: "absolute", top: 16, right: 20, zIndex: 500 }}>
@@ -1135,10 +1134,10 @@ function TutorialFlow({ onComplete }) {
 
   // ═══ 6: Performance + Pointer ═══
   if (step === 6) return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#fff", position: "relative" }}>
-      <div style={{ flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: bannerToHtml({ text: "Safe Harbor: Features shown are forward-looking and subject to change", bg: "#F0EBDB", color: "#7A6518", border: "#E8D9A0", align: "center", icon: "shield" }) }} />
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0 }}>
+    <div style={{ height: "100vh", overflow: "hidden", background: "#fff", position: "relative" }}>
+      <div style={{ height: 40 }} dangerouslySetInnerHTML={{ __html: bannerToHtml({ text: "Safe Harbor: Features shown are forward-looking and subject to change", bg: "#F0EBDB", color: "#7A6518", border: "#E8D9A0", align: "center", icon: "shield" }) }} />
+      <div style={{ height: "calc(100vh - 40px)", position: "relative" }}>
+        <div style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}>
           <StageFrame content={SAMPLE_JSX_ROADMAP} contentType="jsx" data={[]} company="Acme Corp" banner="" />
         </div>
       </div>
@@ -1221,7 +1220,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.12</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.13</div>
       </div>
     </div>
   );
