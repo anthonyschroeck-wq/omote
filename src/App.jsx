@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.2 — Demo Stage Designer
+// OMOTE mk6.3 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -222,13 +222,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.2</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.3</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.2</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.3</span>
           </div>
         )}
       </div>
@@ -674,34 +674,41 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
   const hasSet = !!(set.shellHtml || set.jsxCode);
   const cues = workspace.cues || [];
   const canPublish = cues.length > 0;
-  const defaultTab = !hasSet ? "build" : "cues";
+  const hasCues = cues.length > 0;
+
+  // If cues exist, no Build tab. If no cues, start with Build.
+  const defaultTab = hasCues ? "cues" : "build";
   const [tab, setTab] = useState(defaultTab);
   const [csvData, setCsvData] = useState(workspace.csvData||null);
   const [columns, setColumns] = useState(workspace.columns||[]);
   const [csvFile, setCsvFile] = useState(workspace.csvFilename||null);
   const [showNewCue, setShowNewCue] = useState(false);
-  const [cn, setCn] = useState(""); const [cb, setCb] = useState("");
+  const [cn, setCn] = useState(""); const [cb, setCb] = useState(""); const [cloneFrom, setCloneFrom] = useState(null);
   const [namingFirst, setNamingFirst] = useState(false);
   const [editingCue, setEditingCue] = useState(null);
 
   const updateSet = (s) => { onUpdate({ ...workspace, set:s, csvData, columns, csvFilename:csvFile }); };
-  const onSetComplete = () => { if (cues.length === 0) { setNamingFirst(true); setTab("cues"); } else { setTab("cues"); } };
-  const createCue = (name, banner) => {
+  const onSetComplete = () => { setNamingFirst(true); setTab("cues"); };
+
+  const createCue = (name, banner, source) => {
     if (!name.trim()) return;
-    const s = workspace.set || {};
-    const cue = { id:Date.now().toString(), name:name.trim(), banner:(banner||"").trim(), shellHtml:s.shellHtml||"", jsxCode:s.jsxCode||"", method:s.method, notes:[] };
+    // Source: clone from a specific cue, or from the set, or blank
+    const base = source ? { shellHtml:source.shellHtml||"", jsxCode:source.jsxCode||"", method:source.method } : (hasSet ? { shellHtml:set.shellHtml||"", jsxCode:set.jsxCode||"", method:set.method } : { shellHtml:"", jsxCode:"", method:null });
+    const cue = { id:Date.now().toString(), name:name.trim(), banner:(banner||"").trim(), ...base, notes:[], messages:[] };
     const list = [...cues, cue];
     onUpdate({ ...workspace, cues:list, csvData, columns, csvFilename:csvFile });
-    setNamingFirst(false); setShowNewCue(false); setCn(""); setCb("");
+    setNamingFirst(false); setShowNewCue(false); setCn(""); setCb(""); setCloneFrom(null);
   };
+
   const deleteCue = (id) => { const list = cues.filter(v=>v.id!==id); onUpdate({ ...workspace, cues:list }); };
+
   const updateCue = (updated) => {
     const list = cues.map(v => v.id === editingCue.id ? { ...editingCue, shellHtml:updated.shellHtml, jsxCode:updated.jsxCode, method:updated.method, messages:updated.messages, banner:updated.banner } : v);
     setEditingCue({ ...editingCue, shellHtml:updated.shellHtml, jsxCode:updated.jsxCode, method:updated.method, messages:updated.messages, banner:updated.banner });
     onUpdate({ ...workspace, cues:list, csvData, columns, csvFilename:csvFile });
   };
 
-  // Editing a cue — full canvas
+  // ═══ Editing a cue — full canvas ═══
   if (editingCue) {
     const cueAsSet = { shellHtml:editingCue.shellHtml, jsxCode:editingCue.jsxCode, method:editingCue.method, messages:editingCue.messages||[], banner:editingCue.banner };
     return (
@@ -718,8 +725,8 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
     );
   }
 
-  // Build tab in full edit mode
-  if (tab === "build" && hasSet) {
+  // ═══ Initial build (no cues yet) — full canvas ═══
+  if (tab === "build" && hasSet && !hasCues) {
     return (
       <div style={{ height:"100%", background:cl.bg, display:"flex", flexDirection:"column" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:52, borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface }}>
@@ -729,6 +736,11 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
       </div>
     );
   }
+
+  // ═══ Tabs layout ═══
+  const tabs = hasCues
+    ? [{id:"cues",label:"Cues",ok:true},{id:"notes",label:"Notes",ok:cues.some(c=>(c.notes||[]).length>0)}]
+    : [{id:"build",label:"Build",ok:hasSet},{id:"cues",label:"Cues",ok:false},{id:"notes",label:"Notes",ok:false}];
 
   return (
     <div style={{ height:"100%", background:cl.bg, display:"flex", flexDirection:"column" }}>
@@ -740,41 +752,67 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
         <button onClick={()=>onPublish({...workspace,status:"active",csvData,columns,csvFilename:csvFile})} disabled={!canPublish} style={{ padding:"9px 22px", background:canPublish?cl.ink:cl.border, color:canPublish?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:canPublish?"pointer":"not-allowed" }}>Publish</button>
       </div>
       <div style={{ display:"flex", borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface, padding:"0 28px" }}>
-        {[{id:"build",label:"Build",ok:hasSet},{id:"cues",label:"Cues",ok:cues.length>0},{id:"notes",label:"Notes",ok:cues.some(c=>(c.notes||[]).length>0)}].map(tb => (
+        {tabs.map(tb => (
           <button key={tb.id} onClick={()=>setTab(tb.id)} style={{ padding:"12px 20px", background:"none", border:"none", borderBottom:`2px solid ${tab===tb.id?cl.ink:"transparent"}`, ...ui(15,tab===tb.id?500:300), color:tab===tb.id?cl.ink:cl.ink40, cursor:"pointer", marginBottom:-1, display:"flex", alignItems:"center", gap:8 }}>{tb.label}{tb.ok && <div style={{ width:6, height:6, borderRadius:"50%", background:cl.matcha }}/>}</button>
         ))}
       </div>
       <div style={{ flex:1, overflow:"auto" }}>
-        {tab==="build" && !hasSet && <StageBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} aiEnabled={aiEnabled}/>}
+        {/* Build tab — only when no cues */}
+        {tab==="build" && !hasCues && !hasSet && <StageBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} aiEnabled={aiEnabled}/>}
 
+        {/* Cues tab */}
         {tab==="cues" && (
           <div style={{ padding:"36px 28px", maxWidth:800 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:32 }}>
-              <div><h3 style={{ ...ds(28), color:cl.ink, marginBottom:6 }}>Cues</h3><p style={{ ...ui(15,300), color:cl.ink60 }}>Named versions of your stage. Each cue can have its own banner and notes.</p></div>
-              {hasSet && !showNewCue && !namingFirst && <button onClick={()=>setShowNewCue(true)} style={{ padding:"9px 20px", background:cl.ink, color:cl.bg, border:"none", ...mono(10), cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}><OIcon name="plus" size={13} color={cl.bg}/> New Cue</button>}
+              <div><h3 style={{ ...ds(28), color:cl.ink, marginBottom:6 }}>Cues</h3><p style={{ ...ui(15,300), color:cl.ink60 }}>Each cue is an editable instance of your stage. Edit, branch, or start fresh.</p></div>
+              {hasCues && !showNewCue && !namingFirst && <button onClick={()=>setShowNewCue(true)} style={{ padding:"9px 20px", background:cl.ink, color:cl.bg, border:"none", ...mono(10), cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}><OIcon name="plus" size={13} color={cl.bg}/> New Cue</button>}
             </div>
-            {!hasSet && <div style={{ padding:"24px 28px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)" }}><p style={{ ...ui(14,300), color:cl.gold }}>Build your stage first — cues are created from your stage design.</p><button onClick={()=>setTab("build")} style={{ marginTop:12, padding:"8px 18px", background:cl.ink, color:cl.bg, border:"none", ...mono(9), cursor:"pointer" }}>Build Stage</button></div>}
+
+            {!hasCues && !namingFirst && <div style={{ padding:"24px 28px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)" }}><p style={{ ...ui(14,300), color:cl.gold }}>Build your stage first, then save it as your first cue.</p><button onClick={()=>setTab("build")} style={{ marginTop:12, padding:"8px 18px", background:cl.ink, color:cl.bg, border:"none", ...mono(9), cursor:"pointer" }}>Build Stage</button></div>}
+
+            {/* First cue naming (after initial build) */}
             {namingFirst && (
               <div className="fadein" style={{ padding:24, background:cl.surface, border:`2px solid ${cl.navy}`, marginBottom:24 }}>
-                <h4 style={{ ...ds(20), color:cl.ink, marginBottom:6 }}>Name your first cue</h4>
-                <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:16 }}>Your stage is ready. Give this version a name to create your first performable cue.</p>
-                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Cue Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb)}} placeholder="e.g. Default, Current Product, Q3 Roadmap" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
+                <h4 style={{ ...ds(20), color:cl.ink, marginBottom:6 }}>Save as your first cue</h4>
+                <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:16 }}>Your stage is built. Save it as a cue to make it performable. You can create more cues later.</p>
+                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Cue Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb,null)}} placeholder="e.g. Default, Current Product, Q3 Roadmap" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
                 <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Banner <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Safe Harbor: Features shown are 6+ months out" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
-                <button onClick={()=>createCue(cn,cb)} disabled={!cn.trim()} style={{ padding:"10px 24px", background:cn.trim()?cl.ink:cl.border, color:cn.trim()?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:cn.trim()?"pointer":"not-allowed" }}>Create Cue</button>
+                <button onClick={()=>createCue(cn,cb,null)} disabled={!cn.trim()} style={{ padding:"10px 24px", background:cn.trim()?cl.ink:cl.border, color:cn.trim()?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:cn.trim()?"pointer":"not-allowed" }}>Save Cue</button>
               </div>
             )}
+
+            {/* New cue form — with clone source */}
             {showNewCue && !namingFirst && (
               <div className="fadein" style={{ padding:24, background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:24 }}>
                 <h4 style={{ ...ds(20), color:cl.ink, marginBottom:16 }}>New Cue</h4>
-                <p style={{ ...ui(13,300), color:cl.ink60, marginBottom:16 }}>Creates a new cue cloned from your current stage.</p>
-                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb)}} placeholder="e.g. Long-Term Vision, Safe Harbor Demo" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
+                <div style={{ marginBottom:18 }}>
+                  <label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:8 }}>Start from</label>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                    <div onClick={()=>setCloneFrom(null)} style={{ padding:"8px 14px", border:`1px solid ${!cloneFrom?cl.navy:cl.borderLight}`, background:!cloneFrom?cl.navyWash:"transparent", ...mono(9), color:!cloneFrom?cl.navy:cl.ink40, cursor:"pointer", transition:"all 0.15s" }}>Scratch</div>
+                    {cues.map(v => (
+                      <div key={v.id} onClick={()=>setCloneFrom(v)} style={{ padding:"8px 14px", border:`1px solid ${cloneFrom?.id===v.id?cl.navy:cl.borderLight}`, background:cloneFrom?.id===v.id?cl.navyWash:"transparent", ...mono(9), color:cloneFrom?.id===v.id?cl.navy:cl.ink40, cursor:"pointer", transition:"all 0.15s" }}>{v.name}</div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb,cloneFrom)}} placeholder="e.g. Long-Term Vision, Safe Harbor Demo" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
                 <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Banner <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Safe Harbor: Features shown are 6+ months out" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
-                <div style={{ display:"flex", gap:8 }}><button onClick={()=>{setShowNewCue(false);setCn("");setCb("")}} style={{ flex:1, padding:"10px 0", background:"none", border:`1px solid ${cl.border}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>Cancel</button><button onClick={()=>createCue(cn,cb)} disabled={!cn.trim()} style={{ flex:1, padding:"10px 0", background:cn.trim()?cl.ink:cl.border, color:cn.trim()?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:cn.trim()?"pointer":"not-allowed" }}>Create</button></div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>{setShowNewCue(false);setCn("");setCb("");setCloneFrom(null)}} style={{ flex:1, padding:"10px 0", background:"none", border:`1px solid ${cl.border}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>Cancel</button>
+                  <button onClick={()=>createCue(cn,cb,cloneFrom)} disabled={!cn.trim()} style={{ flex:1, padding:"10px 0", background:cn.trim()?cl.ink:cl.border, color:cn.trim()?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:cn.trim()?"pointer":"not-allowed" }}>{cloneFrom?"Clone & Create":"Create Empty"}</button>
+                </div>
               </div>
             )}
+
+            {/* Cue list */}
             {cues.map(v => (
               <div key={v.id} style={{ padding:"20px 24px", border:`1px solid ${cl.borderLight}`, background:cl.surface, marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <div style={{ flex:1 }}><div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:4 }}><span style={{ ...ds(20), color:cl.ink }}>{v.name}</span><span style={{ ...mono(8), color:cl.matcha }}>● Ready</span></div>{v.banner && <p style={{ ...ui(13,300), color:cl.gold }}>{v.banner}</p>}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:4 }}>
+                    <span style={{ ...ds(20), color:cl.ink }}>{v.name}</span>
+                    <span style={{ ...mono(8), color:(v.shellHtml||v.jsxCode)?cl.matcha:cl.ink20 }}>{(v.shellHtml||v.jsxCode)?"● Ready":"○ Empty"}</span>
+                  </div>
+                  {v.banner && <p style={{ ...ui(13,300), color:cl.gold }}>{v.banner}</p>}
+                </div>
                 <div style={{ display:"flex", gap:6 }}>
                   <button onClick={()=>setEditingCue(v)} title="Edit cue" style={{ padding:"8px 10px", background:"none", border:`1px solid ${cl.borderLight}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.navyWash}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="edit" size={15} color={cl.ink60}/></button>
                   <button onClick={()=>deleteCue(v.id)} title="Remove cue" style={{ padding:"8px 10px", background:"none", border:`1px solid ${cl.borderLight}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.background="rgba(139,77,77,0.04)"}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="trash" size={15} color={cl.ink40}/></button>
@@ -859,7 +897,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.2</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.3</div>
       </div>
     </div>
   );
