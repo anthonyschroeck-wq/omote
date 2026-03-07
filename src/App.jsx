@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk5.4 — Demo Stage Designer
+// OMOTE mk6.0 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -222,13 +222,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk5.4</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.0</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk5.4</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.0</span>
           </div>
         )}
       </div>
@@ -248,9 +248,16 @@ const SAMPLE_HTML_TASKS = `<style>*{box-sizing:border-box;margin:0;padding:0}bod
 
 // ─── API + JSX Runtime (preserved from mk4) ─────────────────
 
-// API disabled for public alpha — re-enable by restoring callClaude implementation
 async function callClaude(messages, system) {
-  return { content: [{ type: "text", text: "AI Canvas is disabled in this public alpha." }] };
+  const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
+  const devKey = typeof import.meta !== "undefined" && import.meta.env?.VITE_ANTHROPIC_API_KEY;
+  if (isDev && devKey && devKey !== "sk-ant-your-key-here") {
+    const res = await fetch("https://api.anthropic.com/v1/messages", { method:"POST", headers:{"Content-Type":"application/json","x-api-key":devKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}, body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:8192,system:system||"",messages}) });
+    return res.json();
+  } else {
+    const res = await fetch("/api/generate-shell", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({messages,system}) });
+    return res.json();
+  }
 }
 
 function buildSystemPrompt(columns, sampleRow) {
@@ -357,10 +364,12 @@ function AboutModal({ onClose, onTutorial }) {
 
 // ─── Set Builder ─────────────────────────────────────────────
 
-function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial }) {
+function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial, aiEnabled }) {
   const cl = c();
   const [mode, setMode] = useState((set.shellHtml||set.jsxCode) ? "edit" : null);
   const [messages, setMessages] = useState(set.messages || []);
+  const [input, setInput] = useState(""); const [img, setImg] = useState(null);
+  const [loading, setLoading] = useState(false); const [error, setError] = useState(null);
   const [editBanner, setEditBanner] = useState(false);
   const [bannerDraft, setBannerDraft] = useState(set.banner || "");
   const [tutorialHtmlPicker, setTutorialHtmlPicker] = useState(false);
@@ -371,8 +380,32 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial })
   const chatEnd = useRef(null);
   const fileRef = useRef(null);
   const jsxFileRef = useRef(null);
+  const sample = Array.isArray(csvData) && csvData.length > 0 ? csvData[0] : null;
 
   useEffect(() => { chatEnd.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
+
+  const onPaste = useCallback((e) => {
+    if (!aiEnabled) return;
+    const items = e.clipboardData?.items; if (!items) return;
+    for (const item of items) { if (item.type.startsWith("image/")) { e.preventDefault(); const f = item.getAsFile(); if (f) { const r = new FileReader(); r.onload = ev => setImg(ev.target.result); r.readAsDataURL(f); } break; } }
+  }, [aiEnabled]);
+
+  const send = async () => {
+    if (!aiEnabled || (!input.trim() && !img)) return; setError(null);
+    const dm = { role:"user", text:input.trim(), image:img };
+    const nm = [...messages, dm]; setMessages(nm); setInput(""); setImg(null); setLoading(true);
+    try {
+      const apiM = nm.map(m => { if (m.role==="user") { const ct=[]; if (m.image) { const [mt,dt]=m.image.split(","); ct.push({type:"image",source:{type:"base64",media_type:mt.match(/:(.*?);/)?.[1]||"image/png",data:dt}}); } if (m.text) ct.push({type:"text",text:m.text}); return {role:"user",content:ct}; } return {role:"assistant",content:m.text||""}; });
+      const res = await callClaude(apiM, buildSystemPrompt(columns||[], sample));
+      if (res.error) { setError(res.error?.message||res.error); setLoading(false); return; }
+      const txt = res.content?.map(x=>x.text||"").join("")||"";
+      let html = txt.replace(/```html\n?/g,"").replace(/```\n?/g,"").trim();
+      const am = { role:"assistant", text:txt, html }; const up = [...nm, am]; setMessages(up);
+      onUpdate({ ...set, shellHtml:html, messages:up, method:"images" });
+      if (!mode) setMode("edit");
+    } catch(err2) { setError(err2.message); }
+    setLoading(false);
+  };
 
   const handleFileUpload = (content, filename) => { let html = content; if (!html.includes("<html") && !html.includes("<!DOCTYPE")) html = `<div>${html}</div>`; onUpdate({ ...set, shellHtml:html, sourceFile:filename, method:"html" }); setMode("edit"); };
   const handleFileDrop = (files) => { const f = files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => handleFileUpload(ev.target.result, f.name); r.readAsText(f); };
@@ -393,10 +426,11 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial })
         <h3 style={{ ...ds(28), color:cl.ink, marginBottom:8 }}>Build Your Set</h3>
         <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:32 }}>The set is the visual shell your audience sees. How do you want to build it?</p>
         <div style={{ display:"flex", gap:16, marginBottom:20 }}>
-          <div style={{ flex:1, padding:"28px 20px", border:`1px solid ${cl.borderLight}`, background:cl.surface, textAlign:"center", opacity:0.4, cursor:"not-allowed" }}>
+          <div onClick={()=>{if(aiEnabled)setMode("images")}} style={{ flex:1, padding:"28px 20px", border:`1px solid ${cl.borderLight}`, background:cl.surface, textAlign:"center", opacity:aiEnabled?1:0.4, cursor:aiEnabled?"pointer":"not-allowed", transition:"all 0.2s" }} onMouseEnter={e=>{if(aiEnabled)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight}}>
             <div style={{ fontSize:28, marginBottom:12, opacity:0.6 }}>📸</div>
             <div style={{ ...ui(16,500), color:cl.ink, marginBottom:4 }}>Start with Images</div>
-            <div style={{ ...mono(9), color:cl.ink40, marginTop:8 }}>Coming Soon</div>
+            {!aiEnabled && <div style={{ ...mono(9), color:cl.ink40, marginTop:8 }}>Coming Soon</div>}
+            {aiEnabled && <div style={{ ...ui(13,300), color:cl.ink60 }}>Paste screenshots, describe the layout</div>}
           </div>
           <div onClick={()=>{if(isTutorial)setTutorialHtmlPicker(true);else setMode("html")}} style={{ flex:1, padding:"28px 20px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:"pointer", textAlign:"center", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
             <div style={{ fontSize:28, marginBottom:12, opacity:0.6 }}>📄</div>
@@ -411,6 +445,24 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial })
         </div>
         {tutorialHtmlPicker && <div className="fadein" onClick={()=>setTutorialHtmlPicker(false)} style={{ position:"fixed", inset:0, background:"rgba(26,26,26,0.25)", zIndex:200 }}/>}
         {tutorialHtmlPicker && <div className="fadein" style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:440, background:cl.surface, border:`1px solid ${cl.borderLight}`, zIndex:201, boxShadow:"0 16px 48px rgba(0,0,0,0.12)", padding:28 }}><h3 style={{ ...ds(22), marginBottom:16 }}>Choose a template</h3>{tutorialHtmlOptions.map(opt=><div key={opt.label} onClick={()=>{handleFileUpload(opt.html,opt.label+".html");setTutorialHtmlPicker(false)}} style={{ padding:"14px 18px", border:`1px solid ${cl.borderLight}`, background:cl.bg, marginBottom:8, cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}><div style={{ ...ui(15,500), color:cl.ink }}>{opt.label}</div><div style={{ ...ui(13,300), color:cl.ink60 }}>{opt.desc}</div></div>)}<button onClick={()=>{setTutorialHtmlPicker(false);setMode("html")}} style={{ width:"100%", padding:"10px 0", marginTop:8, background:"none", border:`1px solid ${cl.borderLight}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>Or upload your own file</button></div>}
+      </div>
+    );
+  }
+
+  // ─── Images Mode (AI-enabled) ───
+  if (mode==="images" && !hasContent && aiEnabled) {
+    return (
+      <div style={{ padding:"36px 28px", maxWidth:600 }}>
+        <button onClick={()=>setMode(null)} style={{ background:"none", border:"none", cursor:"pointer", ...mono(10), color:cl.ink60, marginBottom:20 }}>← Back</button>
+        <div onPaste={onPaste} onDragOver={e=>{e.preventDefault();setHtmlDrag(true)}} onDragLeave={()=>setHtmlDrag(false)}
+          onDrop={e=>{e.preventDefault();setHtmlDrag(false);const f=e.dataTransfer?.files?.[0];if(f&&f.type.startsWith("image/")){const r=new FileReader();r.onload=ev=>{setImg(ev.target.result);setInput("Recreate this interface using my data.");setMode("edit")};r.readAsDataURL(f)}}}
+          style={{ padding:"56px 40px", border:`2px dashed ${htmlDrag?cl.navy:cl.border}`, background:htmlDrag?cl.navyWash:"transparent", cursor:"pointer", textAlign:"center", marginBottom:16 }}
+          onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=e=>{const f=e.target.files?.[0];if(f){const r=new FileReader();r.onload=ev=>{setImg(ev.target.result);setInput("Recreate this interface using my data.");setMode("edit")};r.readAsDataURL(f)}};inp.click()}}>
+          <div style={{ fontSize:32, marginBottom:12, opacity:0.5 }}>📸</div>
+          <p style={{ ...mono(11), color:cl.ink60, marginBottom:6 }}>Paste, drop, or click to upload an image</p>
+          <p style={{ ...ui(14,300), color:cl.ink40 }}>Screenshot of the interface you want to recreate</p>
+        </div>
+        <p style={{ ...ui(13,300), color:cl.ink20 }}>Tip: Use Ctrl+V to paste a screenshot from your clipboard</p>
       </div>
     );
   }
@@ -462,20 +514,30 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial })
               <button onClick={onComplete} style={{ padding:"4px 14px", background:cl.matcha, color:"#fff", border:"none", ...mono(8), cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}><OIcon name="success" size={12} color="#fff"/> Done</button>
             </div>
           </div>
-          <div style={{ flex:1, overflow:"auto", padding:18 }}>
-            {messages.length===0 && hasContent && <div style={{ textAlign:"center", padding:"24px 16px" }}><div style={{ ...ds(18), color:cl.ink, marginBottom:8 }}>Set built</div><p style={{ ...ui(14,300), color:cl.ink60 }}>Your set is ready. Use the AI Canvas to refine it when available.</p></div>}
-            {messages.length===0 && !hasContent && <div style={{ textAlign:"center", padding:"36px 20px" }}><div style={{ ...ds(20), color:cl.ink, marginBottom:10 }}>Design the set</div><p style={{ ...ui(14,300), color:cl.ink60 }}>Upload content to get started.</p></div>}
+          <div style={{ flex:1, overflow:"auto", padding:18 }} onPaste={onPaste}>
+            {messages.length===0 && hasContent && <div style={{ textAlign:"center", padding:"24px 16px" }}><div style={{ ...ds(18), color:cl.ink, marginBottom:8 }}>Set built</div><p style={{ ...ui(14,300), color:cl.ink60 }}>{aiEnabled?"Describe changes or paste screenshots to refine.":"Your set is ready."}</p></div>}
+            {messages.length===0 && !hasContent && <div style={{ textAlign:"center", padding:"36px 20px" }}><div style={{ ...ds(20), color:cl.ink, marginBottom:10 }}>Design the set</div><p style={{ ...ui(14,300), color:cl.ink60 }}>{aiEnabled?"Paste a screenshot and describe the layout.":"Upload content to get started."}</p></div>}
             {messages.map((m,i) => <div key={i} style={{ marginBottom:14, display:"flex", flexDirection:"column", alignItems:m.role==="user"?"flex-end":"flex-start" }}><div style={{ maxWidth:"88%", padding:"10px 14px", borderRadius:m.role==="user"?"12px 12px 2px 12px":"12px 12px 12px 2px", background:m.role==="user"?cl.navy:cl.bg, color:m.role==="user"?"#fff":cl.ink, ...ui(14) }}>{m.image && <img src={m.image} alt="" style={{ maxWidth:"100%", maxHeight:140, borderRadius:6, marginBottom:m.text?8:0, display:"block" }}/>}{m.text && <div style={{ whiteSpace:"pre-wrap" }}>{m.text}</div>}</div></div>)}
+            {loading && <div style={{ padding:"10px 14px", borderRadius:"12px 12px 12px 2px", background:cl.bg, ...ui(14,300), color:cl.ink40 }}>Generating...</div>}
+            {error && <div style={{ padding:"10px 14px", background:"rgba(139,77,77,0.06)", border:"1px solid rgba(139,77,77,0.15)", borderRadius:8, ...ui(13), color:cl.akane }}>{error}</div>}
             <div ref={chatEnd}/>
           </div>
-          <div style={{ padding:"12px 18px", borderTop:`1px solid ${cl.borderLight}`, position:"relative" }}>
-            <div style={{ position:"absolute", inset:0, background:cl.surface, opacity:0.7, zIndex:2 }}/>
-            <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:3 }}><span style={{ ...mono(9), color:cl.ink40 }}>AI Canvas — Coming Soon</span></div>
-            <div style={{ display:"flex", gap:10, alignItems:"flex-end", opacity:0.3, pointerEvents:"none" }}>
-              <textarea disabled placeholder="Describe changes, paste images..." rows={2} style={{ flex:1, padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink40, outline:"none", resize:"none", lineHeight:1.5 }}/>
-              <button disabled style={{ padding:"10px 14px", background:cl.border, color:cl.ink40, border:"none", cursor:"not-allowed", flexShrink:0 }}><OIcon name="send" size={16} color={cl.ink40}/></button>
+          {img && <div style={{ padding:"8px 18px", borderTop:`1px solid ${cl.borderLight}`, display:"flex", alignItems:"center", gap:10, background:cl.navyWash }}><img src={img} alt="" style={{ width:48, height:32, objectFit:"cover", borderRadius:4 }}/><span style={{ ...mono(9), color:cl.navy, flex:1 }}>Screenshot</span><button onClick={()=>setImg(null)} style={{ background:"none", border:"none", cursor:"pointer" }}><OIcon name="x" size={14} color={cl.ink40}/></button></div>}
+          {aiEnabled ? (
+            <div style={{ padding:"12px 18px", borderTop:`1px solid ${cl.borderLight}`, display:"flex", gap:10, alignItems:"flex-end" }}>
+              <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}}} onPaste={onPaste} placeholder="Describe changes, paste images..." rows={2} style={{ flex:1, padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none", resize:"none", lineHeight:1.5 }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/>
+              <button onClick={send} disabled={loading||(!input.trim()&&!img)} style={{ padding:"10px 14px", background:(input.trim()||img)?cl.ink:cl.border, color:(input.trim()||img)?cl.bg:cl.ink40, border:"none", cursor:(input.trim()||img)?"pointer":"not-allowed", flexShrink:0 }}><OIcon name="send" size={16} color={(input.trim()||img)?cl.bg:cl.ink40}/></button>
             </div>
-          </div>
+          ) : (
+            <div style={{ padding:"12px 18px", borderTop:`1px solid ${cl.borderLight}`, position:"relative" }}>
+              <div style={{ position:"absolute", inset:0, background:cl.surface, opacity:0.7, zIndex:2 }}/>
+              <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:3 }}><span style={{ ...mono(9), color:cl.ink40 }}>AI Canvas — Coming Soon</span></div>
+              <div style={{ display:"flex", gap:10, alignItems:"flex-end", opacity:0.3, pointerEvents:"none" }}>
+                <textarea disabled placeholder="Describe changes, paste images..." rows={2} style={{ flex:1, padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink40, outline:"none", resize:"none", lineHeight:1.5 }}/>
+                <button disabled style={{ padding:"10px 14px", background:cl.border, color:cl.ink40, border:"none", cursor:"not-allowed", flexShrink:0 }}><OIcon name="send" size={16} color={cl.ink40}/></button>
+              </div>
+            </div>
+          )}
         </div>
         <div onMouseDown={(e) => { e.preventDefault(); const startX=e.clientX; const startW=chatWidth; setIsDragging(true); const onMove=(ev)=>{const c2=containerRef.current;const max=c2?c2.offsetWidth*0.7:900;setChatWidth(Math.max(280,Math.min(max,startW+ev.clientX-startX)))}; const onUp=()=>{setIsDragging(false);document.removeEventListener("mousemove",onMove);document.removeEventListener("mouseup",onUp);document.body.style.cursor="";document.body.style.userSelect=""}; document.addEventListener("mousemove",onMove); document.addEventListener("mouseup",onUp); document.body.style.cursor="col-resize"; document.body.style.userSelect="none"; }} style={{ width:6, cursor:"col-resize", background:"transparent", flexShrink:0, position:"relative", zIndex:10 }}>
           <div style={{ position:"absolute", top:0, bottom:0, left:2, width:1, background:isDragging?cl.navy:cl.borderLight, transition:isDragging?"none":"background 0.2s" }}/>
@@ -497,7 +559,7 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial })
 
 // ─── Backstage ───────────────────────────────────────────────
 
-function Backstage({ workspace, onUpdate, onPublish, isTutorial }) {
+function Backstage({ workspace, onUpdate, onPublish, isTutorial, aiEnabled }) {
   const cl = c();
   const hasData = Array.isArray(workspace.csvData) && workspace.csvData.length > 0;
   const set = workspace.set || {};
@@ -543,7 +605,7 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:52, borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}><h2 style={{ ...ds(20), color:cl.ink }}>{workspace.name}</h2><span style={{ ...mono(9), padding:"2px 8px", background:cl.navyWash, color:cl.navy }}>Set</span><span style={{ ...mono(8), color:cl.matcha }}>● Built</span></div>
         </div>
-        <SetBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} isTutorial={isTutorial}/>
+        <SetBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} isTutorial={isTutorial} aiEnabled={aiEnabled}/>
       </div>
     );
   }
@@ -593,7 +655,7 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial }) {
             )}
           </div>
         )}
-        {tab==="set" && !hasSet && <SetBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} isTutorial={isTutorial}/>}
+        {tab==="set" && !hasSet && <SetBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} isTutorial={isTutorial} aiEnabled={aiEnabled}/>}
         {tab==="cues" && (
           <div style={{ padding:"36px 28px", maxWidth:800 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:32 }}>
@@ -725,7 +787,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk5.4</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.0</div>
       </div>
     </div>
   );
@@ -755,7 +817,22 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
                   <span style={{ ...mono(8), padding:"2px 8px", background:s.status==="active"?`${cl.matcha}15`:cl.goldWash, color:s.status==="active"?cl.matcha:cl.gold }}>{s.status==="active"?"Active":"Draft"}</span>
                 </div>
                 <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:4 }}>{s.description}</p>
-                {s.cues?.length>0 && <p style={{...mono(8),color:cl.ink20,marginBottom:14}}>{s.cues.length} cue{s.cues.length!==1?"s":""}</p>}
+                {s.cues?.length>0 && <p style={{...mono(8),color:cl.ink20,marginBottom:4}}>{s.cues.length} cue{s.cues.length!==1?"s":""}</p>}
+                {role==="admin" && (s.assignedUsers||[]).length>0 && (
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14}}>
+                    <OIcon name="team" size={12} color={cl.ink20}/>
+                    <div style={{display:"flex",marginLeft:2}}>
+                      {(s.assignedUsers||[]).slice(0,5).map((uid,ai) => {
+                        const au = (users||[]).find(u=>u.id===uid) || (uid===TEST_USER.id?TEST_USER:null);
+                        if(!au) return null;
+                        return <div key={uid} style={{width:20,height:20,borderRadius:"50%",background:uid===TEST_USER.id?cl.goldWash:cl.navyWash,border:`1.5px solid ${cl.surface}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(7),color:uid===TEST_USER.id?cl.gold:cl.navy,marginLeft:ai>0?-6:0,zIndex:5-ai}} title={au.name}>{(au.name||"?")[0]}</div>;
+                      })}
+                      {(s.assignedUsers||[]).length>5 && <div style={{width:20,height:20,borderRadius:"50%",background:cl.bg,border:`1.5px solid ${cl.surface}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(7),color:cl.ink40,marginLeft:-6}}>+{(s.assignedUsers||[]).length-5}</div>}
+                    </div>
+                    <span style={{...mono(7),color:cl.ink20}}>{(s.assignedUsers||[]).length} user{(s.assignedUsers||[]).length!==1?"s":""}</span>
+                  </div>
+                )}
+                {role==="admin" && (s.assignedUsers||[]).length===0 && <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14,...mono(8),color:cl.ink20,opacity:0.5}}>No users assigned</div>}
                 <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                   {s.status==="active"&&s.cues?.some(v=>v.shellHtml||v.jsxCode)?(<button onClick={()=>onSelect(s)} style={{flex:1,padding:"10px 0",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Perform</button>):(<button onClick={()=>onEdit(s)} style={{flex:1,padding:"10px 0",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Configure</button>)}
                   {role==="admin" && <>
@@ -1429,7 +1506,7 @@ function PersonalSettings({ user, themeMode, setThemeMode }) {
 }
 
 
-function Users({ users, onRefresh, currentUserId, onImpersonate }) {
+function Users({ users, stages, onRefresh, currentUserId, onImpersonate }) {
   const cl = c(); const [show,setShow]=useState(false); const [nn,setNn]=useState(""); const [ne,setNe]=useState(""); const [np,setNp]=useState(""); const [nr,setNr]=useState("user"); const [err,setErr]=useState(null); const [busy,setBusy]=useState(false);
   const add = async () => {
     if(!ne||!np) return; setBusy(true); setErr(null);
@@ -1469,21 +1546,31 @@ function Users({ users, onRefresh, currentUserId, onImpersonate }) {
         {allUsers.map((u,i)=>{
           const isTestUser = u.id === TEST_USER.id;
           const isSelf = u.id === currentUserId;
+          const userStages = (stages||[]).filter(s => (s.assignedUsers||[]).includes(u.id));
           return (
-            <div key={u.id} style={{display:"flex",alignItems:"center",padding:"14px 20px",background:i%2===0?cl.surface:"transparent",border:`1px solid ${isTestUser?`${cl.navy}30`:cl.borderLight}`,borderTop:i===0?undefined:"none"}}>
-              <div style={{width:34,height:34,borderRadius:"50%",background:isTestUser?cl.goldWash:u.role==="admin"?cl.navyWash:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(11),color:isTestUser?cl.gold:u.role==="admin"?cl.navy:cl.ink40,flexShrink:0}}>{isTestUser?"T":(u.name||u.email)[0].toUpperCase()}</div>
-              <div style={{flex:1,marginLeft:14}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{...ui(15,500),color:cl.ink}}>{u.name}</span>
-                  <span style={{...mono(8),padding:"1px 6px",background:isTestUser?cl.goldWash:u.role==="admin"?cl.navyWash:cl.bg,color:isTestUser?cl.gold:u.role==="admin"?cl.navy:cl.ink40,border:`1px solid ${cl.borderLight}`}}>{isTestUser?"test":u.role}</span>
-                  {isSelf && <span style={{...mono(7),color:cl.ink20}}>You</span>}
+            <div key={u.id} style={{padding:"14px 20px",background:i%2===0?cl.surface:"transparent",border:`1px solid ${isTestUser?`${cl.navy}30`:cl.borderLight}`,borderTop:i===0?undefined:"none"}}>
+              <div style={{display:"flex",alignItems:"center"}}>
+                <div style={{width:34,height:34,borderRadius:"50%",background:isTestUser?cl.goldWash:u.role==="admin"?cl.navyWash:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(11),color:isTestUser?cl.gold:u.role==="admin"?cl.navy:cl.ink40,flexShrink:0}}>{isTestUser?"T":(u.name||u.email)[0].toUpperCase()}</div>
+                <div style={{flex:1,marginLeft:14}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{...ui(15,500),color:cl.ink}}>{u.name}</span>
+                    <span style={{...mono(8),padding:"1px 6px",background:isTestUser?cl.goldWash:u.role==="admin"?cl.navyWash:cl.bg,color:isTestUser?cl.gold:u.role==="admin"?cl.navy:cl.ink40,border:`1px solid ${cl.borderLight}`}}>{isTestUser?"test":u.role}</span>
+                    {isSelf && <span style={{...mono(7),color:cl.ink20}}>You</span>}
+                  </div>
+                  <div style={{...ui(13,300),color:cl.ink40}}>{u.email}</div>
                 </div>
-                <div style={{...ui(13,300),color:cl.ink40}}>{u.email}</div>
+                <div style={{display:"flex",gap:6}}>
+                  {onImpersonate && !isSelf && <button onClick={()=>onImpersonate(u)} style={{background:"none",border:`1px solid ${cl.borderLight}`,padding:"5px 12px",...mono(8),color:cl.ink60,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.color=cl.navy}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.color=cl.ink60}}>View as</button>}
+                  {!isSelf && !isTestUser && <button onClick={()=>remove(u.id)} style={{background:"none",border:`1px solid ${cl.borderLight}`,padding:"5px 12px",...mono(8),color:cl.ink40,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.color=cl.akane}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.color=cl.ink40}}>Remove</button>}
+                </div>
               </div>
-              <div style={{display:"flex",gap:6}}>
-                {onImpersonate && !isSelf && <button onClick={()=>onImpersonate(u)} style={{background:"none",border:`1px solid ${cl.borderLight}`,padding:"5px 12px",...mono(8),color:cl.ink60,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.color=cl.navy}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.color=cl.ink60}}>View as</button>}
-                {!isSelf && !isTestUser && <button onClick={()=>remove(u.id)} style={{background:"none",border:`1px solid ${cl.borderLight}`,padding:"5px 12px",...mono(8),color:cl.ink40,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.color=cl.akane}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.color=cl.ink40}}>Remove</button>}
-              </div>
+              {u.role !== "admin" && (
+                <div style={{marginLeft:48,marginTop:6,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  {userStages.length > 0 ? userStages.map(s => (
+                    <span key={s.id} style={{display:"inline-flex",alignItems:"center",gap:4,...mono(8),padding:"2px 8px",background:cl.navyWash,color:cl.navy,border:`1px solid ${cl.borderLight}`}}><OIcon name={s.icon||"cube"} size={10} color={cl.navy}/>{s.name}</span>
+                  )) : <span style={{...mono(8),color:cl.ink20}}>No stages assigned</span>}
+                </div>
+              )}
             </div>
           );
         })}
@@ -1692,13 +1779,13 @@ export default function Omote() {
                 onShare={handleShareStage}
                 onTutorial={startTutorial}/>}
 
-              {screen==="users" && <Users users={users} onRefresh={loadUsers} currentUserId={user?.id} onImpersonate={user?.role==="admin"?setImpersonating:null}/>}
+              {screen==="users" && <Users users={users} stages={stages} onRefresh={loadUsers} currentUserId={user?.id} onImpersonate={user?.role==="admin"?setImpersonating:null}/>}
               {screen==="personal-settings" && <PersonalSettings user={user} themeMode={themeMode} setThemeMode={setThemeMode}/>}
               {screen==="help" && <HelpPage onTutorial={startTutorial}/>}
               {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerConfig}/>}
               {screen==="storyteller" && <StorytellerSettings stages={visibleStages}/>}
 
-              {screen==="backstage" && activeStage && <Backstage workspace={activeStage} isTutorial={activeStage?.isTutorial}
+              {screen==="backstage" && activeStage && <Backstage workspace={activeStage} isTutorial={activeStage?.isTutorial} aiEnabled={user?.role==="admin"}
                 onUpdate={handleUpdateStage}
                 onPublish={handlePublish}/>}
 
