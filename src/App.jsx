@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.16 — Demo Stage Designer
+// OMOTE mk6.17 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -242,13 +242,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.16</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.17</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.16</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.17</span>
           </div>
         )}
       </div>
@@ -442,11 +442,10 @@ function AboutModal({ onClose, onTutorial }) {
       <div style={{ ...ui(15,300), color:LT.ink80, lineHeight:1.7, marginBottom:24 }}>
         <p style={{ marginBottom:16 }}>Omote is a stage designer for product demonstrations. Build immersive, data-driven demo environments that adapt to your audience — without touching the production product.</p>
         <div style={{ padding:"14px 18px", background:LT.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}><p style={{ ...ui(13,400), color:LT.gold }}>This is a public alpha. Some features are still in development.</p></div>
-        <p>New here? Take the <strong>Guided Tour</strong> — a 5-minute walkthrough of building and performing a demo.</p>
+        <p>New here? The Guided Tour is being redesigned and will be available soon.</p>
       </div>
       <div style={{ display:"flex", gap:10 }}>
-        <button onClick={onClose} style={{ flex:1, padding:"12px 0", background:"none", border:`1px solid ${LT.border}`, ...mono(10), color:LT.ink60, cursor:"pointer" }}>Skip</button>
-        <button onClick={onTutorial} style={{ flex:2, padding:"12px 0", background:DK, color:CREAM, border:"none", ...mono(10), letterSpacing:"0.12em", cursor:"pointer" }}>Start Tour</button>
+        <button onClick={onClose} style={{ flex:1, padding:"12px 0", background:DK, color:CREAM, border:"none", ...mono(10), letterSpacing:"0.12em", cursor:"pointer" }}>Get Started</button>
       </div>
     </div>
   </>);
@@ -1057,7 +1056,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.16</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.17</div>
       </div>
     </div>
   );
@@ -1078,7 +1077,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
       <div style={{ maxWidth:800, margin:"0 auto", padding:"48px 40px" }}>
         <div className="breathe" style={{ marginBottom:48 }}><h2 style={{...ds(38),color:cl.ink,marginBottom:8}}>Stages</h2><p style={{...ui(17,300),color:cl.ink60}}>Select a stage to perform, or build a new one.</p></div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-          {!hasTutorial && <div className="breathe" style={{ animationDelay:"0.05s" }}><div onClick={onTutorial} style={{ padding:"24px 28px", border:`2px dashed ${cl.navy}`, background:cl.navyWash, cursor:"pointer", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}><div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}><span style={{ fontSize:20 }}>🎓</span><h3 style={{ ...ds(22), color:cl.navy }}>Guided Tour</h3></div><p style={{ ...ui(14,300), color:cl.ink60 }}>5-minute walkthrough — build a demo, create cues, and perform live.</p></div></div>}
+          {!hasTutorial && <div className="breathe" style={{ animationDelay:"0.05s" }}><div style={{ padding:"24px 28px", border:`2px dashed ${cl.border}`, background:"transparent", opacity:0.5, cursor:"not-allowed" }}><div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}><span style={{ fontSize:20 }}>🎓</span><h3 style={{ ...ds(22), color:cl.ink40 }}>Guided Tour</h3></div><p style={{ ...ui(14,300), color:cl.ink40 }}>Coming soon — being redesigned.</p></div></div>}
           {stages.map((s,i) => {
             const isTutHighlight = s.isTutorial && tutorialStep === 1;
             return (
@@ -1786,7 +1785,7 @@ function HelpPage({ onTutorial }) {
           <p style={{ ...ui(13,300), color:cl.gold }}>Some features are still in development. Stages persist via Supabase.</p>
         </div>
 
-        <button onClick={onTutorial} style={{ width:"100%", padding:"14px 0", background:cl.ink, color:cl.bg, border:"none", ...mono(10), cursor:"pointer" }}>Start Guided Tour</button>
+        <button disabled style={{ width:"100%", padding:"14px 0", background:cl.border, color:cl.ink40, border:"none", ...mono(10), cursor:"not-allowed" }}>Guided Tour — Coming Soon</button>
       </div>
     </div>
   );
@@ -2166,9 +2165,6 @@ export default function Omote() {
           <style>{STYLES}</style>
 
           {screen==="login" && <Login onLogin={handleLogin}/>}
-
-          {tutorialStep === 0 && <TutorialWelcome onStart={launchTutorial} onSkip={endTutorial}/>}
-          {tutorialStep !== null && tutorialStep > 0 && tutorialStep <= 10 && <TutorialOverlay step={tutorialStep} onNext={()=>setTutorialStep(s=>Math.min(s+1,10))} onSkip={endTutorial}/>}
 
           {isLoggedIn && !isPerforming && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={{...user, role:effectiveRole}} stages={visibleStages} activeStageId={activeStage?.id} onLogout={handleLogout}/>}
 
