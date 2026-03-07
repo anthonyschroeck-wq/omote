@@ -8,11 +8,12 @@ export async function signIn(email, password) {
   return data;
 }
 
-export async function signUp(email, password, name, role = 'user') {
+export async function signUp(email, password, name) {
+  // Role is always 'user' — promotion requires admin action via updateProfile
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name, role } },
+    options: { data: { name, role: 'user' } },
   });
   if (error) throw error;
   return data;
@@ -55,14 +56,32 @@ export async function getAllProfiles() {
 }
 
 export async function updateProfile(userId, updates) {
+  // Whitelist: only allow safe fields. Role changes use setUserRole.
+  const ALLOWED = ['name', 'flags'];
+  const safe = {};
+  for (const k of ALLOWED) {
+    if (updates[k] !== undefined) safe[k] = updates[k];
+  }
+  if (Object.keys(safe).length === 0) return null;
   const { data, error } = await supabase
     .from('profiles')
-    .update(updates)
+    .update(safe)
     .eq('id', userId)
     .select()
     .single();
   if (error) throw error;
   return data;
+}
+
+// Admin-only: set a user's role. RLS ensures only admins can call this.
+export async function setUserRole(userId, role) {
+  const valid = ['user', 'admin', 'super-admin'];
+  if (!valid.includes(role)) throw new Error('Invalid role');
+  const { error } = await supabase
+    .from('profiles')
+    .update({ role })
+    .eq('id', userId);
+  if (error) throw error;
 }
 
 export async function deleteProfile(userId) {

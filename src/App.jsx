@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk7.2 — Demo Stage Designer
+// OMOTE mk7.3 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -48,7 +48,7 @@ const mono = (s=11) => ({ fontFamily:"'IBM Plex Mono',monospace", fontSize:s, fo
 
 // ─── Omote Brand Icons (crayon texture style) ────────────────
 
-function OIcon({ name, size=20, color }) {
+const OIcon = React.memo(function OIcon({ name, size=20, color }) {
   const cl = color || NAVY;
   const s = size; const vb = "0 0 48 48";
   const icons = {
@@ -84,7 +84,7 @@ function OIcon({ name, size=20, color }) {
     cube: <svg width={s} height={s} viewBox={vb} fill="none"><path d="M 24 6 L 40 16 L 40 32 L 24 42 L 8 32 L 8 16 Z" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M 24 6 L 24 42 M 8 16 L 24 26 L 40 16" stroke={cl} strokeWidth="1.1" fill="none" strokeLinecap="round" opacity="0.5"/><path d="M 24 6.5 L 39.5 16.3 L 39.5 31.7 L 24 41.5" stroke={cl} strokeWidth="0.5" fill="none" opacity="0.25"/></svg>,
   };
   return icons[name] || null;
-}
+});
 
 const STAGE_ICONS = ["rocket","globe","diamond","flask","shield","bolt","mountain","leaf","compass","crown","star","cube"];
 
@@ -246,13 +246,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.2</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.3</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.2</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.3</span>
           </div>
         )}
       </div>
@@ -275,13 +275,14 @@ const SAMPLE_HTML_TASKS = `<style>*{box-sizing:border-box;margin:0;padding:0}bod
 async function callClaude(messages, system) {
   const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
   const devKey = typeof import.meta !== "undefined" && import.meta.env?.VITE_ANTHROPIC_API_KEY;
+  let res;
   if (isDev && devKey && devKey !== "sk-ant-your-key-here") {
-    const res = await fetch("https://api.anthropic.com/v1/messages", { method:"POST", headers:{"Content-Type":"application/json","x-api-key":devKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}, body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:8192,system:system||"",messages}) });
-    return res.json();
+    res = await fetch("https://api.anthropic.com/v1/messages", { method:"POST", headers:{"Content-Type":"application/json","x-api-key":devKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}, body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:8192,system:system||"",messages}) });
   } else {
-    const res = await fetch("/api/generate-shell", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({messages,system}) });
-    return res.json();
+    res = await fetch("/api/generate-shell", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({messages,system}) });
   }
+  if (!res.ok) { const err = await res.text().catch(()=>"API error"); throw new Error(`API ${res.status}: ${err.slice(0,200)}`); }
+  return res.json();
 }
 
 function buildSystemPrompt(options = {}) {
@@ -376,12 +377,14 @@ function parseBanner(banner) {
   return { text:banner.text||"", bg:banner.bg||"#F0EBDB", color:banner.color||"#7A6518", border:banner.border||"#E8D9A0", align:banner.align||"left", icon:banner.icon||"dot" };
 }
 
+function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
 function bannerToHtml(banner) {
   const b = parseBanner(banner);
   if (!b || !b.text) return "";
   const iconHtml = (BANNER_ICONS.find(i=>i.id===b.icon)||BANNER_ICONS[1]).html;
   const align = b.align === "center" ? "justify-content:center;text-align:center" : b.align === "right" ? "justify-content:flex-end;text-align:right" : "";
-  return `<div style="background:${b.bg};border-bottom:1px solid ${b.border};padding:10px 24px;font-family:-apple-system,sans-serif;font-size:13px;color:${b.color};display:flex;align-items:center;gap:8px;${align}">${iconHtml}${b.text}</div>`;
+  return `<div style="background:${escHtml(b.bg)};border-bottom:1px solid ${escHtml(b.border)};padding:10px 24px;font-family:-apple-system,sans-serif;font-size:13px;color:${escHtml(b.color)};display:flex;align-items:center;gap:8px;${align}">${iconHtml}${escHtml(b.text)}</div>`;
 }
 
 function BannerBadge({ banner }) {
@@ -406,7 +409,7 @@ function JsxFrame({ jsxCode, data, company, banner }) {
     const bh = bannerToHtml(banner);
     const loaderHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}#root{min-height:100vh}</style><link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"></head><body>${bh}<div id="root"><div style="padding:40px;text-align:center;color:#999">Loading...</div></div><script>window.addEventListener("message",function(e){if(!e.data||e.data.type!=="omote-runtime")return;try{window.process={env:{NODE_ENV:"production"}};var fn=new Function(e.data.runtime);fn();window.__DEMO_DATA__=e.data.data;window.__COMPANY_NAME__=e.data.company;var fn2=new Function(e.data.code);fn2();var Component=window.__OMOTE_COMPONENT__;if(Component){var root=ReactDOM.createRoot(document.getElementById("root"));root.render(React.createElement(Component,{data:window.__DEMO_DATA__,companyName:window.__COMPANY_NAME__}))}else{document.getElementById("root").innerHTML="<div style='padding:40px;text-align:center;color:#999'>No component exported.</div>"}}catch(err){document.getElementById("root").innerHTML="<div style='padding:40px;font-family:monospace'><div style='color:#c44;font-weight:bold;margin-bottom:8px'>Runtime Error</div><pre style='background:#fff5f5;padding:16px;border:1px solid #fcc;overflow:auto;font-size:12px;white-space:pre-wrap'>"+err.message+"</pre></div>";console.error(err)}});window.parent.postMessage({type:"omote-ready"},"*");<\/script></body></html>`;
     const iframe = iframeRef.current; if (!iframe) return;
-    const handleMsg = (e) => { if (e.data?.type === "omote-ready") iframe.contentWindow.postMessage({ type:"omote-runtime", runtime:OMOTE_RUNTIME, code, data:sd.slice(0,100), company:dn }, "*"); };
+    const handleMsg = (e) => { if (e.data?.type === "omote-ready" && e.source === iframe.contentWindow) iframe.contentWindow.postMessage({ type:"omote-runtime", runtime:OMOTE_RUNTIME, code, data:sd.slice(0,100), company:dn }, "*"); };
     window.addEventListener("message", handleMsg);
     iframe.srcdoc = loaderHtml;
     return () => window.removeEventListener("message", handleMsg);
@@ -418,7 +421,8 @@ function JsxFrame({ jsxCode, data, company, banner }) {
 function HtmlFrame({ html, data, company, banner }) {
   const [blobUrl, setBlobUrl] = useState(null);
   const sd = Array.isArray(data)?data:[]; const dn = company||"Company";
-  const ds2 = `<script>window.__DEMO_DATA__=${JSON.stringify(sd.slice(0,100))};window.__COMPANY_NAME__=${JSON.stringify(dn)};<\/script>`;
+  const safeJson = (v) => JSON.stringify(v).replace(/</g,"\\u003c").replace(/>/g,"\\u003e");
+  const ds2 = `<script>window.__DEMO_DATA__=${safeJson(sd.slice(0,100))};window.__COMPANY_NAME__=${safeJson(dn)};<\/script>`;
   const bh = bannerToHtml(banner);
   const raw = (html||"").replace(/\{\{COMPANY_NAME\}\}/g,dn);
   const isFull = raw.includes("<!DOCTYPE")||raw.includes("<html");
@@ -426,9 +430,9 @@ function HtmlFrame({ html, data, company, banner }) {
     let doc; if (isFull) { doc=raw.replace(/<head>/i,`<head>${ds2}`).replace(/<body[^>]*>/i,m=>`${m}${bh}`); if(!doc.includes("window.__DEMO_DATA__"))doc=ds2+doc; } else { doc=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{box-sizing:border-box;margin:0;padding:0}</style>${ds2}</head><body>${bh}${raw}</body></html>`; }
     if (isFull) { const b=new Blob([doc],{type:"text/html"}); const u=URL.createObjectURL(b); setBlobUrl(u); return ()=>URL.revokeObjectURL(u); } else { setBlobUrl(null); }
   }, [html,data,company,banner]);
-  if (isFull&&blobUrl) return <iframe src={blobUrl} style={{width:"100%",height:"100%",border:"none",background:"#fff"}} title="Preview"/>;
+  if (isFull&&blobUrl) return <iframe src={blobUrl} sandbox="allow-scripts" style={{width:"100%",height:"100%",border:"none",background:"#fff"}} title="Preview"/>;
   const fragDoc=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{box-sizing:border-box;margin:0;padding:0}</style>${ds2}</head><body>${bh}${raw}</body></html>`;
-  return <iframe srcDoc={fragDoc} style={{width:"100%",height:"100%",border:"none",background:"#fff"}} sandbox="allow-scripts allow-same-origin" title="Preview"/>;
+  return <iframe srcDoc={fragDoc} style={{width:"100%",height:"100%",border:"none",background:"#fff"}} sandbox="allow-scripts" title="Preview"/>;
 }
 
 function StageFrame({ content, contentType, data, company, banner }) {
@@ -1061,7 +1065,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.2</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.3</div>
       </div>
     </div>
   );
@@ -2193,7 +2197,7 @@ function HelpPage({ onTutorial }) {
         </div>
 
         <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.2</p>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.3</p>
           <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
@@ -2271,7 +2275,12 @@ function Users({ users, stages, onRefresh, currentUserId, onImpersonate, onUpdat
   const add = async () => {
     if(!ne||!np) return; setBusy(true); setErr(null);
     try {
-      await db.signUp(ne.trim(), np, nn || ne.split("@")[0], nr);
+      const result = await db.signUp(ne.trim(), np, nn || ne.split("@")[0]);
+      if (nr !== "user" && result?.user?.id) {
+        // Wait for trigger to create profile, then promote
+        await new Promise(r => setTimeout(r, 500));
+        await db.setUserRole(result.user.id, nr);
+      }
       setShow(false); setNn(""); setNe(""); setNp(""); setNr("user");
       onRefresh();
     } catch(e) { setErr(e.message); }
