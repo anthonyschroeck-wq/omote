@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.20 — Demo Stage Designer
+// OMOTE mk7.0 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -187,7 +187,7 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
           <div key={gi}>
             {gi > 0 && <div style={{ height:1, background:cl.borderLight, margin:expanded?"8px 16px":"8px 10px" }}/>}
             {group.map(item => {
-          const isActive = screen === item.id || (item.id === "stages" && screen === "hub") || (item.id === "admin" && screen === "users");
+          const isActive = screen === item.id || (item.id === "stages" && screen === "hub") || (item.id === "admin" && (screen === "users" || screen === "integrations" || screen === "analytics"));
           const isDisabled = item.disabled;
           const isOpen = (item.id === "stages") || (item.id === "admin" && adminOpen);
 
@@ -196,6 +196,8 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
             active: activeStageId === s.id && (screen==="backstage"||screen==="audience"||screen==="cue-select"),
           })) : item.id === "admin" ? [
             { key:"users", icon:"team", label:"Users", nav:"users", active: screen==="users" },
+            { key:"analytics", icon:"stages", label:"Analytics", nav:"analytics", active: screen==="analytics" },
+            { key:"integrations", icon:"settings", label:"Integrations", nav:"integrations", active: screen==="integrations" },
           ] : [];
 
           return (
@@ -244,13 +246,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.20</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.0</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.20</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.0</span>
           </div>
         )}
       </div>
@@ -1059,7 +1061,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.20</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.0</div>
       </div>
     </div>
   );
@@ -1156,14 +1158,54 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
 
 // ─── Seller Screens ──────────────────────────────────────────
 
-function AudienceSetup({ onNext, onSkip, stage, companyName, setCompanyName, persona, setPersona }) {
+const SAMPLE_ACCOUNTS = [
+  { id:"acc-1", name:"Meridian Corp", industry:"Technology", arr:"$420K", opp:{ id:"opp-1", name:"Enterprise Expansion Q3", amount:"$180K", stage:"Negotiation", close:"Mar 28, 2026" }},
+  { id:"acc-2", name:"Atlas Dynamics", industry:"Manufacturing", arr:"$285K", opp:{ id:"opp-2", name:"Platform Renewal", amount:"$310K", stage:"Proposal", close:"Apr 15, 2026" }},
+  { id:"acc-3", name:"Neon Health", industry:"Healthcare", arr:"$190K", opp:{ id:"opp-3", name:"Analytics Add-On", amount:"$95K", stage:"Discovery", close:"May 1, 2026" }},
+  { id:"acc-4", name:"Quantum Ridge", industry:"Financial Services", arr:"$560K", opp:{ id:"opp-4", name:"Multi-Year Renewal", amount:"$1.2M", stage:"Negotiation", close:"Mar 15, 2026" }},
+  { id:"acc-5", name:"Cobalt Systems", industry:"SaaS", arr:"$140K", opp:{ id:"opp-5", name:"Growth Tier Upgrade", amount:"$75K", stage:"Qualification", close:"Apr 30, 2026" }},
+];
+
+function AudienceSetup({ onNext, onSkip, stage, companyName, setCompanyName, persona, setPersona, account, setAccount }) {
   const cl = c(); const ok = companyName.trim().length>0 && persona;
   return (
     <div style={{ height:"100%", overflow:"auto", background:cl.bg, padding:"48px 40px" }}>
-      <div style={{ maxWidth:540, margin:"0 auto" }}>
+      <div style={{ maxWidth:560, margin:"0 auto" }}>
         <span style={{...mono(10),padding:"3px 10px",background:cl.navyWash,color:cl.navy,marginBottom:12,display:"inline-block"}}>{stage.name}</span>
         <h2 style={{...ds(34),color:cl.ink,marginBottom:8}}>Who is your audience?</h2>
         <p style={{...ui(16,300),color:cl.ink60,marginBottom:40}}>Set the context for this performance.</p>
+
+        {/* Salesforce Account/Opp Selector */}
+        <div style={{marginBottom:32,padding:"20px 24px",background:cl.surface,border:`1px solid ${cl.borderLight}`}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{...mono(9),color:cl.ink40}}>Link to Salesforce</div>
+              <span style={{...mono(7),padding:"1px 6px",background:cl.goldWash,color:cl.gold,border:"1px solid rgba(140,122,60,0.15)"}}>Prototype</span>
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {SAMPLE_ACCOUNTS.map(a => {
+              const sel = account?.id === a.id;
+              return (
+                <div key={a.id} onClick={()=>{setAccount(sel?null:a);if(!sel)setCompanyName(a.name)}} style={{
+                  padding:"14px 18px",border:`1px solid ${sel?cl.navy:cl.borderLight}`,background:sel?cl.navyWash:"transparent",
+                  cursor:"pointer",transition:"all 0.15s",display:"flex",justifyContent:"space-between",alignItems:"center",
+                }} onMouseEnter={e=>{if(!sel)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{if(!sel)e.currentTarget.style.borderColor=cl.borderLight}}>
+                  <div>
+                    <div style={{...ui(15,500),color:cl.ink}}>{a.name}</div>
+                    <div style={{...ui(12,300),color:cl.ink40}}>{a.industry} · ARR {a.arr}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{...ui(13,500),color:sel?cl.navy:cl.ink60}}>{a.opp.name}</div>
+                    <div style={{...mono(8),color:cl.ink20}}>{a.opp.stage} · {a.opp.amount}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {account && <div style={{marginTop:10,...mono(8),color:cl.ink20}}>Close: {account.opp.close}</div>}
+        </div>
+
         <div style={{marginBottom:32}}><label style={{...mono(10),color:cl.ink40,display:"block",marginBottom:10}}>Company Name</label><input type="text" value={companyName} onChange={e=>setCompanyName(e.target.value)} style={{width:"100%",padding:"14px 16px",border:`1px solid ${cl.border}`,background:cl.surface,...ui(18),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
         <div style={{marginBottom:48}}><label style={{...mono(10),color:cl.ink40,display:"block",marginBottom:10}}>Their Role</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{PERSONAS.map(pp=>{const s=persona===pp.id;return(<div key={pp.id} onClick={()=>setPersona(pp.id)} style={{padding:"18px 20px",border:`1px solid ${s?cl.navy:cl.borderLight}`,background:s?cl.navyWash:cl.surface,cursor:"pointer",transition:"all 0.2s"}}><div style={{...ui(16,500),color:s?cl.navy:cl.ink,marginBottom:3}}>{pp.label}</div><div style={{...ui(13,300),color:cl.ink60}}>{pp.focus}</div></div>)})}</div></div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1740,6 +1782,212 @@ function Performance({ stage, cue, companyName, onExit, pointerConfig }) {
   );
 }
 
+// ─── Integrations ────────────────────────────────────────────
+
+function Integrations() {
+  const cl = c();
+  return (
+    <div style={{height:"100%",overflow:"auto",background:cl.bg,padding:"48px 40px"}}>
+      <div style={{maxWidth:640,margin:"0 auto"}}>
+        <h2 style={{...ds(32),color:cl.ink,marginBottom:8}}>Integrations</h2>
+        <p style={{...ui(16,300),color:cl.ink60,marginBottom:40}}>Connect Omote to your sales stack.</p>
+
+        <div style={{padding:"28px 32px",background:cl.surface,border:`1px solid ${cl.borderLight}`,marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:44,height:44,borderRadius:10,background:"#00A1E0",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <svg width="24" height="17" viewBox="0 0 24 17" fill="#fff"><path d="M10.1 1.4C11 .5 12.2 0 13.6 0c1.8 0 3.3 1 4.1 2.4.7-.3 1.4-.4 2.2-.4C22.7 2 25 4.3 25 7.1s-2.3 5.1-5.1 5.1h-.3c-.6 1.6-2.2 2.8-4 2.8-1.1 0-2-.4-2.8-1-.7.6-1.6 1-2.6 1-1.9 0-3.4-1.2-4-2.9h-.1C3 12.1.7 9.8.7 7s2.3-5 5.1-5c.8 0 1.6.2 2.3.6.7-1 1.8-1.6 3-1.6.4 0 .7.1 1 .2L10.1 1.4z"/></svg>
+              </div>
+              <div>
+                <div style={{...ui(18,600),color:cl.ink}}>Salesforce</div>
+                <div style={{...ui(13,300),color:cl.ink60}}>Sync accounts, opportunities, and activity</div>
+              </div>
+            </div>
+            <span style={{...mono(8),padding:"3px 10px",background:cl.goldWash,color:cl.gold,border:"1px solid rgba(140,122,60,0.15)"}}>Coming Soon</span>
+          </div>
+          <div style={{padding:"16px 20px",background:cl.bg,border:`1px solid ${cl.borderLight}`,marginBottom:16}}>
+            <div style={{...mono(8),color:cl.ink40,marginBottom:10}}>Planned Capabilities</div>
+            <div style={{...ui(14,300),color:cl.ink80,lineHeight:1.8}}>
+              Auto-populate audience context from Salesforce Account and Opportunity records.
+              Log demo sessions as Activities on the Opportunity timeline.
+              Track which cues correlate with deal progression and win rates.
+              Pull contact roles to auto-suggest personas during audience setup.
+            </div>
+          </div>
+          <button disabled style={{padding:"10px 24px",background:cl.border,color:cl.ink40,border:"none",...mono(10),cursor:"not-allowed"}}>Connect Salesforce</button>
+        </div>
+
+        <div style={{padding:"20px 24px",background:cl.surface,border:`1px solid ${cl.borderLight}`,opacity:0.5}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:36,height:36,borderRadius:8,background:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(12),color:cl.ink20}}>+</div>
+            <div>
+              <div style={{...ui(15,500),color:cl.ink40}}>More integrations</div>
+              <div style={{...ui(13,300),color:cl.ink20}}>HubSpot, Gong, Slack, and more — coming later</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Analytics ───────────────────────────────────────────────
+
+const SAMPLE_SESSIONS = [
+  { id:1, stage:"Revenue Platform", cue:"Current Product", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:1240, date:"2026-03-06T14:30:00", persona:"CRO" },
+  { id:2, stage:"Revenue Platform", cue:"Roadmap", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:680, date:"2026-03-06T15:10:00", persona:"CRO" },
+  { id:3, stage:"Analytics Suite", cue:"Default", account:"Atlas Dynamics", opp:"Platform Renewal", duration:1820, date:"2026-03-05T10:00:00", persona:"VP Ops" },
+  { id:4, stage:"Revenue Platform", cue:"Current Product", account:"Neon Health", opp:"Analytics Add-On", duration:960, date:"2026-03-04T16:00:00", persona:"CAO" },
+  { id:5, stage:"Revenue Platform", cue:"Current Product", account:"Quantum Ridge", opp:"Multi-Year Renewal", duration:2100, date:"2026-03-04T11:00:00", persona:"CFO" },
+  { id:6, stage:"Analytics Suite", cue:"Safe Harbor", account:"Cobalt Systems", opp:"Growth Tier Upgrade", duration:540, date:"2026-03-03T09:30:00", persona:"VP Eng" },
+  { id:7, stage:"Revenue Platform", cue:"Roadmap", account:"Atlas Dynamics", opp:"Platform Renewal", duration:1100, date:"2026-03-02T14:00:00", persona:"VP Ops" },
+  { id:8, stage:"Revenue Platform", cue:"Current Product", account:"Quantum Ridge", opp:"Multi-Year Renewal", duration:1560, date:"2026-03-01T10:30:00", persona:"CRO" },
+  { id:9, stage:"Analytics Suite", cue:"Default", account:"Neon Health", opp:"Analytics Add-On", duration:780, date:"2026-02-28T15:00:00", persona:"CAO" },
+  { id:10, stage:"Revenue Platform", cue:"Roadmap", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:900, date:"2026-02-27T13:00:00", persona:"VP Sales" },
+];
+
+const SAMPLE_OUTCOMES = [
+  { cue:"Current Product", won:14, lost:4, open:8, avgSessions:2.3 },
+  { cue:"Roadmap", won:9, lost:2, open:5, avgSessions:1.8 },
+  { cue:"Safe Harbor", won:6, lost:1, open:3, avgSessions:1.4 },
+];
+
+function Analytics() {
+  const cl = c();
+  const fmtDuration = (s) => { const m = Math.floor(s/60); const sec = s%60; return m > 0 ? `${m}m ${sec}s` : `${sec}s`; };
+
+  // Aggregate by account
+  const byAccount = {};
+  SAMPLE_SESSIONS.forEach(s => {
+    if (!byAccount[s.account]) byAccount[s.account] = { account:s.account, opp:s.opp, sessions:0, totalDuration:0 };
+    byAccount[s.account].sessions++;
+    byAccount[s.account].totalDuration += s.duration;
+  });
+  const accountRows = Object.values(byAccount).sort((a,b) => b.sessions - a.sessions);
+
+  // Aggregate by cue
+  const byCue = {};
+  SAMPLE_SESSIONS.forEach(s => {
+    if (!byCue[s.cue]) byCue[s.cue] = { cue:s.cue, sessions:0, totalDuration:0 };
+    byCue[s.cue].sessions++;
+    byCue[s.cue].totalDuration += s.duration;
+  });
+  const cueRows = Object.values(byCue).sort((a,b) => b.sessions - a.sessions);
+
+  const maxSessions = Math.max(...accountRows.map(r => r.sessions));
+  const maxDuration = Math.max(...accountRows.map(r => r.totalDuration));
+
+  return (
+    <div style={{height:"100%",overflow:"auto",background:cl.bg,padding:"48px 40px"}}>
+      <div style={{maxWidth:800,margin:"0 auto"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <h2 style={{...ds(32),color:cl.ink}}>Analytics</h2>
+          <span style={{...mono(8),padding:"3px 10px",background:cl.goldWash,color:cl.gold,border:"1px solid rgba(140,122,60,0.15)"}}>Prototype</span>
+        </div>
+        <p style={{...ui(16,300),color:cl.ink60,marginBottom:40}}>Demo engagement across accounts, opportunities, and cues.</p>
+
+        {/* Summary Cards */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:32}}>
+          {[
+            { label:"Total Sessions", value:SAMPLE_SESSIONS.length },
+            { label:"Unique Accounts", value:accountRows.length },
+            { label:"Avg Duration", value:fmtDuration(Math.round(SAMPLE_SESSIONS.reduce((a,s)=>a+s.duration,0)/SAMPLE_SESSIONS.length)) },
+            { label:"Avg Sessions/Acct", value:(SAMPLE_SESSIONS.length/accountRows.length).toFixed(1) },
+          ].map((c2,i) => (
+            <div key={i} style={{padding:"18px 22px",background:cl.surface,border:`1px solid ${cl.borderLight}`}}>
+              <div style={{...mono(8),color:cl.ink40,marginBottom:6}}>{c2.label}</div>
+              <div style={{...ds(26),color:cl.ink}}>{c2.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* By Account */}
+        <div style={{padding:"24px 28px",background:cl.surface,border:`1px solid ${cl.borderLight}`,marginBottom:20}}>
+          <div style={{...mono(9),color:cl.ink40,marginBottom:16}}>Sessions by Account</div>
+          {accountRows.map(r => (
+            <div key={r.account} style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
+              <div style={{width:140,...ui(14,500),color:cl.ink}}>{r.account}</div>
+              <div style={{flex:1,display:"flex",gap:8,alignItems:"center"}}>
+                <div style={{flex:1,height:20,background:cl.bg,borderRadius:3,overflow:"hidden",position:"relative"}}>
+                  <div style={{width:`${(r.sessions/maxSessions)*100}%`,height:"100%",background:cl.navy,borderRadius:3,transition:"width 0.5s"}}/>
+                </div>
+                <span style={{...mono(9),color:cl.ink60,width:80,textAlign:"right"}}>{r.sessions} sessions</span>
+              </div>
+              <span style={{...mono(8),color:cl.ink20,width:70,textAlign:"right"}}>{fmtDuration(r.totalDuration)}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* By Cue */}
+        <div style={{padding:"24px 28px",background:cl.surface,border:`1px solid ${cl.borderLight}`,marginBottom:20}}>
+          <div style={{...mono(9),color:cl.ink40,marginBottom:16}}>Sessions by Cue</div>
+          <div style={{display:"flex",gap:16}}>
+            {cueRows.map(r => (
+              <div key={r.cue} style={{flex:1,padding:"16px 20px",background:cl.bg,border:`1px solid ${cl.borderLight}`,textAlign:"center"}}>
+                <div style={{...ds(24),color:cl.ink,marginBottom:4}}>{r.sessions}</div>
+                <div style={{...ui(14,500),color:cl.ink80,marginBottom:2}}>{r.cue}</div>
+                <div style={{...mono(8),color:cl.ink20}}>avg {fmtDuration(Math.round(r.totalDuration/r.sessions))}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Outcome Correlation — Prototype */}
+        <div style={{padding:"24px 28px",background:cl.surface,border:`1px solid ${cl.borderLight}`,marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <div style={{...mono(9),color:cl.ink40}}>Cue → Outcome Correlation</div>
+            <span style={{...mono(7),padding:"2px 6px",background:cl.goldWash,color:cl.gold}}>Prototype</span>
+          </div>
+          <p style={{...ui(13,300),color:cl.ink20,marginBottom:16}}>Preliminary signal: which cues correlate with deal outcomes. Requires Salesforce integration for production data.</p>
+          {SAMPLE_OUTCOMES.map(o => {
+            const total = o.won + o.lost + o.open;
+            return (
+              <div key={o.cue} style={{marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                  <span style={{...ui(14,500),color:cl.ink}}>{o.cue}</span>
+                  <span style={{...mono(8),color:cl.ink20}}>{o.avgSessions} avg sessions before close</span>
+                </div>
+                <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",background:cl.bg}}>
+                  <div style={{width:`${(o.won/total)*100}%`,background:cl.matcha,transition:"width 0.5s"}} title={`Won: ${o.won}`}/>
+                  <div style={{width:`${(o.open/total)*100}%`,background:cl.navy,transition:"width 0.5s"}} title={`Open: ${o.open}`}/>
+                  <div style={{width:`${(o.lost/total)*100}%`,background:"#C47070",transition:"width 0.5s"}} title={`Lost: ${o.lost}`}/>
+                </div>
+                <div style={{display:"flex",gap:16,marginTop:4}}>
+                  <span style={{...mono(7),color:cl.matcha}}>Won {o.won}</span>
+                  <span style={{...mono(7),color:cl.navy}}>Open {o.open}</span>
+                  <span style={{...mono(7),color:"#C47070"}}>Lost {o.lost}</span>
+                  <span style={{...mono(7),color:cl.ink20,marginLeft:"auto"}}>{Math.round((o.won/total)*100)}% win rate</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Recent Sessions */}
+        <div style={{padding:"24px 28px",background:cl.surface,border:`1px solid ${cl.borderLight}`}}>
+          <div style={{...mono(9),color:cl.ink40,marginBottom:16}}>Recent Sessions</div>
+          {SAMPLE_SESSIONS.slice(0,8).map(s => (
+            <div key={s.id} style={{display:"flex",alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${cl.borderLight}`,gap:12}}>
+              <div style={{flex:1}}>
+                <div style={{...ui(14,500),color:cl.ink}}>{s.account}</div>
+                <div style={{...ui(12,300),color:cl.ink40}}>{s.opp}</div>
+              </div>
+              <div style={{textAlign:"right",marginRight:16}}>
+                <div style={{...mono(9),color:cl.navy}}>{s.stage} → {s.cue}</div>
+                <div style={{...mono(8),color:cl.ink20}}>{s.persona}</div>
+              </div>
+              <div style={{textAlign:"right",width:80}}>
+                <div style={{...mono(9),color:cl.ink60}}>{fmtDuration(s.duration)}</div>
+                <div style={{...mono(7),color:cl.ink20}}>{new Date(s.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Help ────────────────────────────────────────────────────
 
 function HelpPage({ onTutorial }) {
@@ -1961,6 +2209,7 @@ export default function Omote() {
   const [activeCue, setActiveCue] = useState(null);
   const [companyName, setCompanyName] = useState("");
   const [persona, setPersona] = useState(null);
+  const [account, setAccount] = useState(null);
   const [themeMode, setThemeMode] = useState("light");
   const [showAbout, setShowAbout] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -2046,7 +2295,7 @@ export default function Omote() {
     setUser(null); setScreen("login"); setStages([]); setUsers([]);
   };
 
-  const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setScreen("hub"); };
+  const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setAccount(null); setScreen("hub"); };
   const isLoggedIn = screen !== "login" && screen !== "loading";
   const isPerforming = screen === "perform";
   const theme = { mode: themeMode };
@@ -2171,6 +2420,8 @@ export default function Omote() {
     else if (id === "pointer") setScreen("pointer");
     else if (id === "storyteller") setScreen("storyteller");
     else if (id === "users") setScreen("users");
+    else if (id === "integrations") setScreen("integrations");
+    else if (id === "analytics") setScreen("analytics");
     else if (id === "help") setScreen("help");
     else if (id.startsWith("stage:")) {
       const stageId = id.replace("stage:", "");
@@ -2222,6 +2473,8 @@ export default function Omote() {
                 onTutorial={startTutorial}/>}
 
               {screen==="users" && <Users users={users} stages={stages} onRefresh={loadUsers} currentUserId={user?.id} currentUserRole={user?.role} onImpersonate={isAdminRole(user?.role)?setImpersonating:null} onUpdateFlags={handleUpdateFlags}/>}
+              {screen==="integrations" && <Integrations/>}
+              {screen==="analytics" && <Analytics/>}
               {screen==="personal-settings" && <PersonalSettings user={user} themeMode={themeMode} setThemeMode={setThemePersist}/>}
               {screen==="help" && <HelpPage onTutorial={startTutorial}/>}
               {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerPersist}/>}
@@ -2232,7 +2485,7 @@ export default function Omote() {
                 onPublish={handlePublish}
                 onPreview={cue=>{setActiveCue(cue);setCompanyName(companyName||"Acme Corp");setScreen("perform")}}/>}
 
-              {screen==="audience" && activeStage && <AudienceSetup stage={activeStage} companyName={companyName} setCompanyName={setCompanyName} persona={persona} setPersona={setPersona}
+              {screen==="audience" && activeStage && <AudienceSetup stage={activeStage} companyName={companyName} setCompanyName={setCompanyName} persona={persona} setPersona={setPersona} account={account} setAccount={setAccount}
                 onNext={()=>{db.logActivity(user.id,"perform",{stage:activeStage.name,company:companyName});setScreen("cue-select")}}
                 onSkip={()=>{if(!companyName.trim())setCompanyName("Acme Corp");setScreen("cue-select")}}/>}
 
