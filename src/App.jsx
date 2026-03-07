@@ -1841,13 +1841,16 @@ function Users({ users, stages, onRefresh, currentUserId, onImpersonate, onUpdat
                       <span key={s.id} style={{display:"inline-flex",alignItems:"center",gap:4,...mono(8),padding:"2px 8px",background:cl.navyWash,color:cl.navy,border:`1px solid ${cl.borderLight}`}}><OIcon name={s.icon||"cube"} size={10} color={cl.navy}/>{s.name}</span>
                     )) : <span style={{...mono(8),color:cl.ink20}}>No stages assigned</span>}
                   </div>
-                  {onUpdateFlags && currentUserRole === "super-admin" && (
+                  {onUpdateFlags && (
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <button onClick={()=>onUpdateFlags(u.id,{ai_builder:!(u.flags?.ai_builder)})} style={{
+                      <button onClick={()=>{if(currentUserRole==="super-admin")onUpdateFlags(u.id,{ai_builder:!(u.flags?.ai_builder)})}} style={{
                         display:"flex",alignItems:"center",gap:6,padding:"3px 10px",
                         background:(u.flags?.ai_builder)?cl.navyWash:"transparent",
                         border:`1px solid ${(u.flags?.ai_builder)?cl.navy:cl.borderLight}`,
-                        ...mono(8),color:(u.flags?.ai_builder)?cl.navy:cl.ink40,cursor:"pointer",transition:"all 0.15s",
+                        ...mono(8),color:(u.flags?.ai_builder)?cl.navy:cl.ink40,
+                        cursor:currentUserRole==="super-admin"?"pointer":"default",
+                        opacity:currentUserRole==="super-admin"?1:0.7,
+                        transition:"all 0.15s",
                       }}>
                         <div style={{width:14,height:8,borderRadius:4,background:(u.flags?.ai_builder)?cl.navy:cl.border,position:"relative",transition:"background 0.2s"}}>
                           <div style={{width:6,height:6,borderRadius:"50%",background:"#fff",position:"absolute",top:1,left:(u.flags?.ai_builder)?7:1,transition:"left 0.2s"}}/>
