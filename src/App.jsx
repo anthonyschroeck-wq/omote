@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.14 — Demo Stage Designer
+// OMOTE mk6.15 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -242,13 +242,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.14</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.15</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.14</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.15</span>
           </div>
         )}
       </div>
@@ -958,14 +958,14 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
 
 const TUTORIAL_STEPS = [
   { id: "welcome" },
-  { id: "hub-intro", hint: "This is your Stage — a demo environment. Click it to start configuring." },
-  { id: "cue-explore", hint: "This is your first Cue — 'Current Product.' Click the pencil icon to open the editor and explore the live demo." },
-  { id: "editor", hint: "This is the Stage Builder. The preview on the right is fully interactive — click tabs, hover cards, expand details. Click Done when you're ready." },
-  { id: "create-roadmap", hint: "Now create a second cue. Click New Cue, select 'Current Product' to clone from, and name it 'Roadmap.'" },
-  { id: "roadmap-edit", hint: "Your Roadmap cue is ready. Click the pencil to edit it — use the AI Canvas chat to describe changes, or explore as-is." },
-  { id: "perform-prompt", hint: "Go back to the Hub (click Stages in the sidebar) and click Perform on your stage to see it full-screen." },
-  { id: "performing", hint: "Performance mode — your audience sees only this. The Omote mark bottom-left reveals the Pointer toolbar. Press P to toggle. Click the mark to exit." },
-  { id: "complete", hint: "Tour complete! You've seen stages, cues, the builder, banners, and performance mode. Create your own stage from the Hub — the Guided Tour stage is yours to keep and experiment with." },
+  { id: "hub-configure", hint: "Your new stage is highlighted below. Click Configure to start building." },
+  { id: "builder-preview", hint: "Your demo is pre-loaded. The preview on the right is fully interactive — click the tabs, hover cards, explore. When ready, click Done to save it as a cue." },
+  { id: "name-first-cue", hint: "Name your first cue — try 'Current Product.' This saves the current state as a performable version." },
+  { id: "create-second", hint: "Your first cue is ready. Now click New Cue to create a variant — select 'Current Product' to clone from and name it 'Roadmap.'" },
+  { id: "edit-roadmap", hint: "Your Roadmap cue is created. Click the pencil icon to edit it — use the AI Canvas to add features, or explore as-is. Click Done when finished." },
+  { id: "go-perform", hint: "Go back to the Hub (Stages in sidebar). Your stage is now published — click Perform to launch it full-screen." },
+  { id: "performing", hint: "Performance mode — your audience sees only this. The Omote mark bottom-left reveals the Pointer toolbar. Press P to toggle annotations. Click the mark to exit." },
+  { id: "complete", hint: "Tour complete! You've built a stage, created cues, and performed live. The Aura Intelligence stage is yours to keep experimenting with." },
 ];
 
 function TutorialOverlay({ step, onNext, onSkip }) {
@@ -1048,7 +1048,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.14</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.15</div>
       </div>
     </div>
   );
@@ -1058,7 +1058,7 @@ function Login({ onLogin }) {
 
 const TEST_USER = { id:"test-user-000", name:"Test User", email:"test@omote.internal", role:"user" };
 
-function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, users, onShare }) {
+function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, users, onShare, tutorialStep }) {
   const cl = c();
   const [modal,setModal]=useState(false); const [nn,setNn]=useState(""); const [nd,setNd]=useState(""); const [ni,setNi]=useState("rocket");
   const [shareModal, setShareModal] = useState(null); // stage being shared
@@ -1070,9 +1070,12 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
         <div className="breathe" style={{ marginBottom:48 }}><h2 style={{...ds(38),color:cl.ink,marginBottom:8}}>Stages</h2><p style={{...ui(17,300),color:cl.ink60}}>Select a stage to perform, or build a new one.</p></div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
           {!hasTutorial && <div className="breathe" style={{ animationDelay:"0.05s" }}><div onClick={onTutorial} style={{ padding:"24px 28px", border:`2px dashed ${cl.navy}`, background:cl.navyWash, cursor:"pointer", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}><div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}><span style={{ fontSize:20 }}>🎓</span><h3 style={{ ...ds(22), color:cl.navy }}>Guided Tour</h3></div><p style={{ ...ui(14,300), color:cl.ink60 }}>5-minute walkthrough — build a demo, create cues, and perform live.</p></div></div>}
-          {stages.map((s,i) => (
+          {stages.map((s,i) => {
+            const isTutHighlight = s.isTutorial && tutorialStep === 1;
+            return (
             <div key={s.id} className="breathe" style={{ animationDelay:`${0.1+i*0.05}s` }}>
-              <div style={{ padding:"24px 28px", border:`1px solid ${cl.borderLight}`, background:cl.surface, transition:"all 0.3s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight}}>
+              <div style={{ padding:"24px 28px", border: isTutHighlight ? `2px solid ${cl.navy}` : `1px solid ${cl.borderLight}`, background: isTutHighlight ? cl.navyWash : cl.surface, transition:"all 0.3s", boxShadow: isTutHighlight ? `0 0 0 4px ${cl.navy}20, 0 4px 20px rgba(90,106,124,0.15)` : "none", position:"relative" }} onMouseEnter={e=>{if(!isTutHighlight)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{if(!isTutHighlight)e.currentTarget.style.borderColor=cl.borderLight}}>
+                {isTutHighlight && <div style={{ position:"absolute", top:-10, right:16, padding:"2px 10px", background:cl.navy, color:"#fff", ...mono(8), borderRadius:3 }}>Start here</div>}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}><OIcon name={s.icon||"cube"} size={18} color={cl.navy}/><h3 style={{ ...ds(22), color:cl.ink }}>{s.name}</h3>{s.isTutorial && <span style={{ ...mono(7), padding:"2px 6px", background:cl.navyWash, color:cl.navy }}>Tutorial</span>}</div>
                   <span style={{ ...mono(8), padding:"2px 8px", background:s.status==="active"?`${cl.matcha}15`:cl.goldWash, color:s.status==="active"?cl.matcha:cl.gold }}>{s.status==="active"?"Active":"Draft"}</span>
@@ -1104,7 +1107,8 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
           {isAdminRole(role) && <div className="breathe" style={{ animationDelay:`${0.15+stages.length*0.05}s` }}><div onClick={()=>setModal(true)} style={{padding:"24px 28px",border:`1px dashed ${cl.border}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:160,gap:14,transition:"all 0.3s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.surface}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.border;e.currentTarget.style.background="transparent"}}><OIcon name="plus" size={18} color={cl.ink40}/><span style={{...mono(10),color:cl.ink40}}>New Stage</span></div></div>}
         </div>
       </div>
@@ -2012,11 +2016,14 @@ export default function Omote() {
 
   const startTutorial = () => {
     setShowAbout(false);
+    setTutorialStep(0); // show welcome modal first
+  };
+
+  const launchTutorial = () => {
     const tutId = "tutorial-" + Date.now();
-    const cue1 = { id: tutId + "-cue1", name: "Current Product", description: "Default demo flow", shellHtml: "", jsxCode: SAMPLE_JSX, method: "jsx", notes: [], messages: [] };
-    const ts = { id: tutId, name: "Aura Intelligence", description: "AI-powered customer analytics platform", status: "active", icon: "compass", csvData: null, columns: [], csvFilename: null, set: { jsxCode: SAMPLE_JSX, method: "jsx" }, cues: [cue1], isTutorial: true, assignedUsers: [] };
+    const ts = { id: tutId, name: "Aura Intelligence", description: "AI-powered customer analytics platform", status: "draft", icon: "compass", csvData: null, columns: [], csvFilename: null, set: { jsxCode: SAMPLE_JSX, method: "jsx" }, cues: [], isTutorial: true, assignedUsers: [] };
     setStages(p => [ts, ...p]);
-    setTutorialStep(0);
+    setTutorialStep(1);
     setScreen("hub");
   };
 
@@ -2024,17 +2031,20 @@ export default function Omote() {
 
   // Auto-advance tutorial based on screen/state changes
   useEffect(() => {
-    if (tutorialStep === null) return;
-    if (tutorialStep === 0) return; // welcome modal, manual advance
+    if (tutorialStep === null || tutorialStep === 0) return;
+    // 1→2: user clicks Configure, enters backstage with build tab
     if (tutorialStep === 1 && screen === "backstage") setTutorialStep(2);
-    if (tutorialStep === 2 && screen === "backstage") {
-      // Check if user is in the cue editor — Backstage handles this internally
-      // We'll stay on 2 until they come back, then check for new cues
-    }
-    if (tutorialStep === 3 && screen === "backstage") setTutorialStep(4);
+    // 2→3: handled by Backstage onSetComplete → triggers namingFirst, which shows in cues tab
+    // We detect that the cues tab appeared (Backstage internal) — user clicks Done
+    if (tutorialStep === 2 && activeStage?.cues?.length >= 1) setTutorialStep(4);
+    // 3: naming first cue — manual, stays until cue created
+    if (tutorialStep === 3 && activeStage?.cues?.length >= 1) setTutorialStep(4);
+    // 4→5: user creates second cue
     if (tutorialStep === 4 && activeStage?.cues?.length >= 2) setTutorialStep(5);
-    if (tutorialStep === 5 && screen === "backstage") {} // editing roadmap
+    // 6: user goes to hub and clicks perform
     if (tutorialStep === 6 && screen === "perform") setTutorialStep(7);
+    // 7→8: user exits performance
+    if (tutorialStep === 7 && screen === "hub") setTutorialStep(8);
   }, [screen, tutorialStep, activeStage?.cues?.length]);
 
   // ─── Stage CRUD (persists to Supabase) ───
@@ -2147,7 +2157,7 @@ export default function Omote() {
 
           {screen==="login" && <Login onLogin={handleLogin}/>}
 
-          {tutorialStep === 0 && <TutorialWelcome onStart={()=>setTutorialStep(1)} onSkip={endTutorial}/>}
+          {tutorialStep === 0 && <TutorialWelcome onStart={launchTutorial} onSkip={endTutorial}/>}
           {tutorialStep !== null && tutorialStep > 0 && tutorialStep < 8 && <TutorialOverlay step={tutorialStep} onNext={()=>setTutorialStep(s=>Math.min(s+1,8))} onSkip={endTutorial}/>}
           {tutorialStep === 8 && <TutorialOverlay step={8} onSkip={endTutorial}/>}
 
@@ -2169,7 +2179,7 @@ export default function Omote() {
               )}
 
               {screen==="hub" && <Hub stages={visibleStages} role={effectiveRole}
-                users={users}
+                users={users} tutorialStep={tutorialStep}
                 onSelect={s=>{setActiveStage(s);setScreen("audience")}}
                 onEdit={s=>{setActiveStage(s);setScreen("backstage")}}
                 onCreate={handleCreateStage}
