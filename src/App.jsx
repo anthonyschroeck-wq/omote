@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.15 — Demo Stage Designer
+// OMOTE mk6.16 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -242,13 +242,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.15</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.16</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.15</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.16</span>
           </div>
         )}
       </div>
@@ -454,7 +454,7 @@ function AboutModal({ onClose, onTutorial }) {
 
 // ─── Stage Builder ───────────────────────────────────────────
 
-function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }) {
+function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled, isTutorial }) {
   const cl = c();
   const [phase, setPhase] = useState((set.shellHtml||set.jsxCode) ? "canvas" : "choose");
   const [brief, setBrief] = useState(set.brief || "");
@@ -663,6 +663,10 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }
 
   // ═══ Phase: JSX Upload ═══
   if (phase === "jsx" && !hasContent) {
+    const loadSample = () => {
+      onUpdate({ ...set, jsxCode: SAMPLE_JSX, shellHtml: "", sourceFile: "sample-aura.jsx", method: "jsx" });
+      setPhase("canvas");
+    };
     return (
       <div style={{ padding:"36px 28px", maxWidth:600 }}>
         <button onClick={()=>setPhase("choose")} style={{ background:"none", border:"none", cursor:"pointer", ...mono(10), color:cl.ink60, marginBottom:20 }}>← Back</button>
@@ -671,6 +675,9 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }
           <div style={{ fontSize:32, marginBottom:12, opacity:0.5 }}>⚛</div>
           <p style={{ ...mono(11), color:cl.ink60, marginBottom:6 }}>Drop JSX file here</p>
         </div>
+        {isTutorial && (
+          <button onClick={loadSample} style={{ width:"100%", padding:"14px 0", background:cl.navy, color:"#fff", border:"none", ...mono(10), cursor:"pointer", marginBottom:20, letterSpacing:"0.08em" }}>Load Sample — Aura Intelligence</button>
+        )}
         <div style={{ padding:"16px 20px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>
           <div style={{ ...mono(8), color:cl.ink40, marginBottom:8 }}>Blessed Libraries</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>{["React 18","Recharts","D3","Lodash","Tailwind CSS"].map(lib=><span key={lib} style={{ ...mono(8), padding:"3px 8px", background:cl.navyWash, color:cl.navy }}>{lib}</span>)}</div>
@@ -756,7 +763,7 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }
 
 // ─── Backstage ───────────────────────────────────────────────
 
-function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
+function Backstage({ workspace, onUpdate, onPublish, aiEnabled, isTutorial }) {
   const cl = c();
   const hasData = Array.isArray(workspace.csvData) && workspace.csvData.length > 0;
   const set = workspace.set || {};
@@ -808,7 +815,7 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
             <span style={{ ...ui(14,500), color:cl.ink }}>{editingCue.name}</span>
           </div>
         </div>
-        <StageBuilder set={cueAsSet} csvData={csvData} columns={columns} onUpdate={updateCue} onComplete={()=>setEditingCue(null)} aiEnabled={aiEnabled}/>
+        <StageBuilder set={cueAsSet} csvData={csvData} columns={columns} onUpdate={updateCue} onComplete={()=>setEditingCue(null)} aiEnabled={aiEnabled} isTutorial={isTutorial}/>
       </div>
     );
   }
@@ -820,7 +827,7 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:52, borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}><h2 style={{ ...ds(20), color:cl.ink }}>{workspace.name}</h2><span style={{ ...mono(8), color:cl.matcha }}>● Built</span></div>
         </div>
-        <StageBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} aiEnabled={aiEnabled}/>
+        <StageBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} aiEnabled={aiEnabled} isTutorial={isTutorial}/>
       </div>
     );
   }
@@ -846,7 +853,7 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
       </div>
       <div style={{ flex:1, overflow:"auto" }}>
         {/* Build tab — only when no cues */}
-        {tab==="build" && !hasCues && !hasSet && <StageBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} aiEnabled={aiEnabled}/>}
+        {tab==="build" && !hasCues && !hasSet && <StageBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} aiEnabled={aiEnabled} isTutorial={isTutorial}/>}
 
         {/* Cues tab */}
         {tab==="cues" && (
@@ -959,11 +966,13 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
 const TUTORIAL_STEPS = [
   { id: "welcome" },
   { id: "hub-configure", hint: "Your new stage is highlighted below. Click Configure to start building." },
-  { id: "builder-preview", hint: "Your demo is pre-loaded. The preview on the right is fully interactive — click the tabs, hover cards, explore. When ready, click Done to save it as a cue." },
+  { id: "choose-method", hint: "Choose how to build. Build with AI is in beta behind a feature flag. For this tour, click Upload JSX." },
+  { id: "jsx-upload", hint: "Normally you'd drag a .jsx file here. For this tour, click Load Sample to auto-load Aura Intelligence — a pre-built analytics demo." },
+  { id: "builder-preview", hint: "Your demo is live in the preview. Click the tabs, hover cards, explore — it's fully interactive. When ready, click Done." },
   { id: "name-first-cue", hint: "Name your first cue — try 'Current Product.' This saves the current state as a performable version." },
-  { id: "create-second", hint: "Your first cue is ready. Now click New Cue to create a variant — select 'Current Product' to clone from and name it 'Roadmap.'" },
-  { id: "edit-roadmap", hint: "Your Roadmap cue is created. Click the pencil icon to edit it — use the AI Canvas to add features, or explore as-is. Click Done when finished." },
-  { id: "go-perform", hint: "Go back to the Hub (Stages in sidebar). Your stage is now published — click Perform to launch it full-screen." },
+  { id: "create-second", hint: "Your first cue is ready. Now click New Cue, select 'Current Product' to clone from, and name it 'Roadmap.'" },
+  { id: "edit-roadmap", hint: "Your Roadmap cue is created. Click the pencil icon to edit it — use the AI Canvas to describe changes, or explore as-is. Click Done when finished." },
+  { id: "go-perform", hint: "Go back to the Hub (Stages in sidebar). Your stage is now published — click Perform to launch full-screen." },
   { id: "performing", hint: "Performance mode — your audience sees only this. The Omote mark bottom-left reveals the Pointer toolbar. Press P to toggle annotations. Click the mark to exit." },
   { id: "complete", hint: "Tour complete! You've built a stage, created cues, and performed live. The Aura Intelligence stage is yours to keep experimenting with." },
 ];
@@ -1048,7 +1057,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.15</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.16</div>
       </div>
     </div>
   );
@@ -2021,7 +2030,7 @@ export default function Omote() {
 
   const launchTutorial = () => {
     const tutId = "tutorial-" + Date.now();
-    const ts = { id: tutId, name: "Aura Intelligence", description: "AI-powered customer analytics platform", status: "draft", icon: "compass", csvData: null, columns: [], csvFilename: null, set: { jsxCode: SAMPLE_JSX, method: "jsx" }, cues: [], isTutorial: true, assignedUsers: [] };
+    const ts = { id: tutId, name: "Aura Intelligence", description: "AI-powered customer analytics platform", status: "draft", icon: "compass", csvData: null, columns: [], csvFilename: null, set: {}, cues: [], isTutorial: true, assignedUsers: [] };
     setStages(p => [ts, ...p]);
     setTutorialStep(1);
     setScreen("hub");
@@ -2032,19 +2041,20 @@ export default function Omote() {
   // Auto-advance tutorial based on screen/state changes
   useEffect(() => {
     if (tutorialStep === null || tutorialStep === 0) return;
-    // 1→2: user clicks Configure, enters backstage with build tab
+    // 1→2: user clicks Configure, enters backstage — chooser shows
     if (tutorialStep === 1 && screen === "backstage") setTutorialStep(2);
-    // 2→3: handled by Backstage onSetComplete → triggers namingFirst, which shows in cues tab
-    // We detect that the cues tab appeared (Backstage internal) — user clicks Done
-    if (tutorialStep === 2 && activeStage?.cues?.length >= 1) setTutorialStep(4);
-    // 3: naming first cue — manual, stays until cue created
-    if (tutorialStep === 3 && activeStage?.cues?.length >= 1) setTutorialStep(4);
-    // 4→5: user creates second cue
-    if (tutorialStep === 4 && activeStage?.cues?.length >= 2) setTutorialStep(5);
-    // 6: user goes to hub and clicks perform
-    if (tutorialStep === 6 && screen === "perform") setTutorialStep(7);
-    // 7→8: user exits performance
-    if (tutorialStep === 7 && screen === "hub") setTutorialStep(8);
+    // 2→3: StageBuilder phase goes to "jsx" — auto-detected when user clicks Upload JSX
+    // 3→4: JSX loaded — hasSet becomes true, StageBuilder goes to canvas
+    // 4→5: user clicks Done, cues tab with naming prompt
+    if (tutorialStep === 4 && activeStage?.cues?.length >= 1) setTutorialStep(6);
+    // 5→6: first cue created
+    if (tutorialStep === 5 && activeStage?.cues?.length >= 1) setTutorialStep(6);
+    // 6→7: second cue created
+    if (tutorialStep === 6 && activeStage?.cues?.length >= 2) setTutorialStep(7);
+    // 8→9: user enters perform
+    if (tutorialStep === 8 && screen === "perform") setTutorialStep(9);
+    // 9→10: user exits performance
+    if (tutorialStep === 9 && screen === "hub") setTutorialStep(10);
   }, [screen, tutorialStep, activeStage?.cues?.length]);
 
   // ─── Stage CRUD (persists to Supabase) ───
@@ -2158,8 +2168,7 @@ export default function Omote() {
           {screen==="login" && <Login onLogin={handleLogin}/>}
 
           {tutorialStep === 0 && <TutorialWelcome onStart={launchTutorial} onSkip={endTutorial}/>}
-          {tutorialStep !== null && tutorialStep > 0 && tutorialStep < 8 && <TutorialOverlay step={tutorialStep} onNext={()=>setTutorialStep(s=>Math.min(s+1,8))} onSkip={endTutorial}/>}
-          {tutorialStep === 8 && <TutorialOverlay step={8} onSkip={endTutorial}/>}
+          {tutorialStep !== null && tutorialStep > 0 && tutorialStep <= 10 && <TutorialOverlay step={tutorialStep} onNext={()=>setTutorialStep(s=>Math.min(s+1,10))} onSkip={endTutorial}/>}
 
           {isLoggedIn && !isPerforming && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={{...user, role:effectiveRole}} stages={visibleStages} activeStageId={activeStage?.id} onLogout={handleLogout}/>}
 
@@ -2193,7 +2202,7 @@ export default function Omote() {
               {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerConfig}/>}
               {screen==="storyteller" && <StorytellerSettings stages={visibleStages}/>}
 
-              {screen==="backstage" && activeStage && <Backstage workspace={activeStage} aiEnabled={user?.role==="super-admin" || !!(user?.flags?.ai_builder)}
+              {screen==="backstage" && activeStage && <Backstage workspace={activeStage} aiEnabled={user?.role==="super-admin" || !!(user?.flags?.ai_builder)} isTutorial={!!activeStage?.isTutorial}
                 onUpdate={handleUpdateStage}
                 onPublish={handlePublish}/>}
 
