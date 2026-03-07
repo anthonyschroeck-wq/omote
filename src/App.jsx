@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, useCallback, createContext, useCont
 import * as Papa from "papaparse";
 import { transform } from "sucrase";
 import OMOTE_RUNTIME from "../public/omote-runtime.js?raw";
+import { supabase } from "./supabase";
+import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk5.3 — Demo Stage Designer
+// OMOTE mk5.4 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -231,12 +233,12 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
         {expanded ? (
           <div>
             <div style={{ ...ui(13,500), color:cl.ink, marginBottom:2 }}>{user?.name}</div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk5.3</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk5.4</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk5.3</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk5.4</span>
           </div>
         )}
       </div>
@@ -702,9 +704,23 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial }) {
 
 // ─── Login ───────────────────────────────────────────────────
 
-function Login({ onLogin, users }) {
-  const [stage,setStage]=useState("anim"); const [u,setU]=useState(""); const [p,setP]=useState(""); const [err,setErr]=useState(null); const [ld,setLd]=useState(false);
-  const go=()=>{const m=users.find(x=>x.email.toLowerCase()===u.trim().toLowerCase()&&x.password===p);if(!m){setErr("Invalid credentials");return;}setLd(true);setTimeout(()=>onLogin(m),500)};
+function Login({ onLogin }) {
+  const [stage,setStage]=useState("anim");
+  const [email,setEmail]=useState(""); const [pw,setPw]=useState("");
+  const [err,setErr]=useState(null); const [ld,setLd]=useState(false);
+
+  const go = async () => {
+    setLd(true); setErr(null);
+    try {
+      const { user } = await db.signIn(email.trim(), pw);
+      const profile = await db.getProfile(user.id);
+      onLogin(profile);
+    } catch (e) {
+      setErr(e.message || "Invalid credentials");
+      setLd(false);
+    }
+  };
+
   if (stage==="anim") return <div style={{minHeight:"100vh",background:CREAM,display:"flex",alignItems:"center",justifyContent:"center"}}><BuildingTheStage onComplete={()=>setStage("form")}/></div>;
   return (
     <div style={{minHeight:"100vh",background:CREAM,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -713,14 +729,13 @@ function Login({ onLogin, users }) {
         <h1 style={{...ds(38),marginBottom:4}}>Omote</h1>
         <p style={{...ui(12,300),color:WARM,letterSpacing:"0.3em",textTransform:"uppercase",marginBottom:36}}>Demo Stage Designer</p>
         <div style={{textAlign:"left",marginBottom:16}}>
-          <div style={{marginBottom:12}}><label style={{...mono(9),color:"#888880",display:"block",marginBottom:5}}>Username</label><input type="text" value={u} onChange={e=>{setU(e.target.value);setErr(null)}} onKeyDown={e=>{if(e.key==="Enter"&&u&&p)go()}} autoFocus style={{width:"100%",padding:"12px 14px",border:`1px solid ${err?"#8B4D4D":"#CCC6BA"}`,background:CREAM,fontFamily:"'Source Sans 3',sans-serif",fontSize:16,color:DK,outline:"none"}} onFocus={e=>{if(!err)e.target.style.borderColor="#5A6A7C"}} onBlur={e=>{if(!err)e.target.style.borderColor="#CCC6BA"}}/></div>
-          <div><label style={{...mono(9),color:"#888880",display:"block",marginBottom:5}}>Password</label><input type="password" value={p} onChange={e=>{setP(e.target.value);setErr(null)}} onKeyDown={e=>{if(e.key==="Enter"&&u&&p)go()}} style={{width:"100%",padding:"12px 14px",border:`1px solid ${err?"#8B4D4D":"#CCC6BA"}`,background:CREAM,fontFamily:"'Source Sans 3',sans-serif",fontSize:16,color:DK,outline:"none"}} onFocus={e=>{if(!err)e.target.style.borderColor="#5A6A7C"}} onBlur={e=>{if(!err)e.target.style.borderColor="#CCC6BA"}}/></div>
+          <div style={{marginBottom:12}}><label style={{...mono(9),color:"#888880",display:"block",marginBottom:5}}>Email</label><input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr(null)}} onKeyDown={e=>{if(e.key==="Enter"&&email&&pw)go()}} autoFocus style={{width:"100%",padding:"12px 14px",border:`1px solid ${err?"#8B4D4D":"#CCC6BA"}`,background:CREAM,fontFamily:"'Source Sans 3',sans-serif",fontSize:16,color:DK,outline:"none"}} onFocus={e=>{if(!err)e.target.style.borderColor="#5A6A7C"}} onBlur={e=>{if(!err)e.target.style.borderColor="#CCC6BA"}}/></div>
+          <div><label style={{...mono(9),color:"#888880",display:"block",marginBottom:5}}>Password</label><input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr(null)}} onKeyDown={e=>{if(e.key==="Enter"&&email&&pw)go()}} style={{width:"100%",padding:"12px 14px",border:`1px solid ${err?"#8B4D4D":"#CCC6BA"}`,background:CREAM,fontFamily:"'Source Sans 3',sans-serif",fontSize:16,color:DK,outline:"none"}} onFocus={e=>{if(!err)e.target.style.borderColor="#5A6A7C"}} onBlur={e=>{if(!err)e.target.style.borderColor="#CCC6BA"}}/></div>
         </div>
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
-        <button onClick={go} disabled={ld||!u||!p} style={{width:"100%",padding:"13px 0",background:(u&&p)?DK:"#CCC6BA",color:(u&&p)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(u&&p)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
+        <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <button onClick={()=>{setLd(true);setTimeout(()=>onLogin(users[0]),300)}} style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #CCC6BA",...mono(10),color:WARM,cursor:"pointer"}}>Quick Enter</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk5.3</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk5.4</div>
       </div>
     </div>
   );
@@ -728,7 +743,7 @@ function Login({ onLogin, users }) {
 
 // ─── Hub ─────────────────────────────────────────────────────
 
-function Hub({ stages, onSelect, onEdit, onCreate, onTutorial, role }) {
+function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role }) {
   const cl = c();
   const [modal,setModal]=useState(false); const [nn,setNn]=useState(""); const [nd,setNd]=useState(""); const [ni,setNi]=useState("rocket");
   const reset=()=>{setModal(false);setNn("");setNd("");setNi("rocket")};
@@ -751,6 +766,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onTutorial, role }) {
                 <div style={{ display:"flex", gap:8 }}>
                   {s.status==="active"&&s.cues?.some(v=>v.shellHtml||v.jsxCode)?(<button onClick={()=>onSelect(s)} style={{flex:1,padding:"10px 0",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Perform</button>):(<button onClick={()=>onEdit(s)} style={{flex:1,padding:"10px 0",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Configure</button>)}
                   {role==="admin"&&s.status==="active" && <button onClick={()=>onEdit(s)} style={{padding:"10px 16px",background:"none",border:`1px solid ${cl.borderLight}`,...mono(10),color:cl.ink60,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><OIcon name="edit" size={12} color={cl.ink60}/> Edit</button>}
+                  {role==="admin" && <button onClick={(e)=>{e.stopPropagation();if(confirm("Delete stage '"+s.name+"'? This cannot be undone."))onDelete(s.id)}} style={{padding:"10px 12px",background:"none",border:`1px solid ${cl.borderLight}`,...mono(10),color:cl.ink40,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.color=cl.akane}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.color=cl.ink40}}>Delete</button>}
                 </div>
               </div>
             </div>
@@ -758,7 +774,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onTutorial, role }) {
           {role==="admin" && <div className="breathe" style={{ animationDelay:`${0.15+stages.length*0.05}s` }}><div onClick={()=>setModal(true)} style={{padding:"24px 28px",border:`1px dashed ${cl.border}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:160,gap:14,transition:"all 0.3s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.surface}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.border;e.currentTarget.style.background="transparent"}}><OIcon name="plus" size={18} color={cl.ink40}/><span style={{...mono(10),color:cl.ink40}}>New Stage</span></div></div>}
         </div>
       </div>
-      {modal && (<><div className="fadein" onClick={reset} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}><div style={{padding:28}}><h3 style={{...ds(24),color:cl.ink,marginBottom:24}}>New Stage</h3><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&nn.trim()){onCreate({id:Date.now().toString(),name:nn,description:nd||"New stage",status:"draft",icon:ni,csvData:null,columns:[],csvFilename:null,cues:[]});reset()}}} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Description</label><input type="text" value={nd} onChange={e=>setNd(e.target.value)} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}}/></div><div style={{marginBottom:24}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Icon</label><IconPicker value={ni} onChange={setNi}/></div><div style={{display:"flex",gap:10}}><button onClick={reset} style={{flex:1,padding:"10px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button><button onClick={()=>{if(nn.trim()){onCreate({id:Date.now().toString(),name:nn,description:nd||"New stage",status:"draft",icon:ni,csvData:null,columns:[],csvFilename:null,cues:[]});reset()}}} disabled={!nn.trim()} style={{flex:1,padding:"10px 0",background:nn.trim()?cl.ink:cl.border,color:nn.trim()?cl.bg:cl.ink40,border:"none",...mono(10),cursor:nn.trim()?"pointer":"not-allowed"}}>Create</button></div></div></div></>)}
+      {modal && (<><div className="fadein" onClick={reset} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}><div style={{padding:28}}><h3 style={{...ds(24),color:cl.ink,marginBottom:24}}>New Stage</h3><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni});reset()}}} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Description</label><input type="text" value={nd} onChange={e=>setNd(e.target.value)} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}}/></div><div style={{marginBottom:24}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Icon</label><IconPicker value={ni} onChange={setNi}/></div><div style={{display:"flex",gap:10}}><button onClick={reset} style={{flex:1,padding:"10px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button><button onClick={()=>{if(nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni});reset()}}} disabled={!nn.trim()} style={{flex:1,padding:"10px 0",background:nn.trim()?cl.ink:cl.border,color:nn.trim()?cl.bg:cl.ink40,border:"none",...mono(10),cursor:nn.trim()?"pointer":"not-allowed"}}>Create</button></div></div></div></>)}
     </div>
   );
 }
@@ -1289,15 +1305,41 @@ function PersonalSettings({ user, themeMode, setThemeMode }) {
   );
 }
 
-function Users({ users, onUpdate }) {
-  const cl = c(); const [show,setShow]=useState(false); const [nn,setNn]=useState(""); const [ne,setNe]=useState(""); const [np,setNp]=useState(""); const [nr,setNr]=useState("user");
-  const add=()=>{if(!ne||!np)return;onUpdate([...users,{id:Date.now().toString(),name:nn||ne,email:ne.toLowerCase(),password:np,role:nr}]);setShow(false);setNn("");setNe("");setNp("");setNr("user")};
+function Users({ users, onRefresh, currentUserId }) {
+  const cl = c(); const [show,setShow]=useState(false); const [nn,setNn]=useState(""); const [ne,setNe]=useState(""); const [np,setNp]=useState(""); const [nr,setNr]=useState("user"); const [err,setErr]=useState(null); const [busy,setBusy]=useState(false);
+  const add = async () => {
+    if(!ne||!np) return; setBusy(true); setErr(null);
+    try {
+      await db.signUp(ne.trim(), np, nn || ne.split("@")[0], nr);
+      setShow(false); setNn(""); setNe(""); setNp(""); setNr("user");
+      onRefresh();
+    } catch(e) { setErr(e.message); }
+    setBusy(false);
+  };
+  const remove = async (uid) => {
+    if(uid === currentUserId) return;
+    try { await db.deleteProfile(uid); onRefresh(); } catch(e) { console.error(e); }
+  };
   return (
     <div style={{height:"100%",overflow:"auto",background:cl.bg}}>
       <div style={{maxWidth:640,margin:"0 auto",padding:"48px 40px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:32}}><h2 style={{...ds(34),color:cl.ink}}>Users</h2>{!show && <button onClick={()=>setShow(true)} style={{padding:"9px 20px",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Add User</button>}</div>
-        {show && <div className="fadein" style={{padding:24,background:cl.surface,border:`1px solid ${cl.borderLight}`,marginBottom:24}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}><div><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:5}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} style={{width:"100%",padding:"9px 10px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(15),color:cl.ink,outline:"none"}}/></div><div><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:5}}>Username</label><input type="text" value={ne} onChange={e=>setNe(e.target.value)} autoFocus style={{width:"100%",padding:"9px 10px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(15),color:cl.ink,outline:"none"}}/></div></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}><div><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:5}}>Password</label><input type="text" value={np} onChange={e=>setNp(e.target.value)} style={{width:"100%",padding:"9px 10px",border:`1px solid ${cl.border}`,background:cl.bg,...mono(12),color:cl.ink,outline:"none"}}/></div><div><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:5}}>Role</label><div style={{display:"flex",border:`1px solid ${cl.border}`}}>{["admin","user"].map(r=><button key={r} onClick={()=>setNr(r)} style={{flex:1,padding:"9px 0",background:nr===r?cl.navyWash:cl.bg,border:"none",...mono(10),color:nr===r?cl.navy:cl.ink40,cursor:"pointer"}}>{r}</button>)}</div></div></div><div style={{display:"flex",gap:8}}><button onClick={()=>setShow(false)} style={{flex:1,padding:"9px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button><button onClick={add} disabled={!ne||!np} style={{flex:1,padding:"9px 0",background:(ne&&np)?cl.ink:cl.border,color:(ne&&np)?cl.bg:cl.ink40,border:"none",...mono(10),cursor:(ne&&np)?"pointer":"not-allowed"}}>Add</button></div></div>}
-        {users.map((u,i)=>(<div key={u.id} style={{display:"flex",alignItems:"center",padding:"14px 20px",background:i%2===0?cl.surface:"transparent",border:`1px solid ${cl.borderLight}`,borderTop:i===0?undefined:"none"}}><div style={{width:34,height:34,borderRadius:"50%",background:u.role==="admin"?cl.navyWash:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(11),color:u.role==="admin"?cl.navy:cl.ink40,flexShrink:0}}>{(u.name||u.email)[0].toUpperCase()}</div><div style={{flex:1,marginLeft:14}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{...ui(15,500),color:cl.ink}}>{u.name}</span><span style={{...mono(8),padding:"1px 6px",background:u.role==="admin"?cl.navyWash:cl.bg,color:u.role==="admin"?cl.navy:cl.ink40,border:`1px solid ${cl.borderLight}`}}>{u.role}</span></div><div style={{...ui(13,300),color:cl.ink40}}>{u.email}</div></div>{users.length>1 && <button onClick={()=>onUpdate(users.filter(x=>x.id!==u.id))} style={{background:"none",border:`1px solid ${cl.borderLight}`,padding:"5px 12px",...mono(8),color:cl.ink40,cursor:"pointer"}}>Remove</button>}</div>))}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:32}}><h2 style={{...ds(34),color:cl.ink}}>Users</h2>{!show && <button onClick={()=>setShow(true)} style={{padding:"9px 20px",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Invite User</button>}</div>
+        {show && <div className="fadein" style={{padding:24,background:cl.surface,border:`1px solid ${cl.borderLight}`,marginBottom:24}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+            <div><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:5}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} style={{width:"100%",padding:"9px 10px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(15),color:cl.ink,outline:"none"}}/></div>
+            <div><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:5}}>Email</label><input type="email" value={ne} onChange={e=>{setNe(e.target.value);setErr(null)}} autoFocus style={{width:"100%",padding:"9px 10px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(15),color:cl.ink,outline:"none"}}/></div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+            <div><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:5}}>Temporary Password</label><input type="text" value={np} onChange={e=>setNp(e.target.value)} style={{width:"100%",padding:"9px 10px",border:`1px solid ${cl.border}`,background:cl.bg,...mono(12),color:cl.ink,outline:"none"}}/></div>
+            <div><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:5}}>Role</label><div style={{display:"flex",border:`1px solid ${cl.border}`}}>{["admin","user"].map(r=><button key={r} onClick={()=>setNr(r)} style={{flex:1,padding:"9px 0",background:nr===r?cl.navyWash:cl.bg,border:"none",...mono(10),color:nr===r?cl.navy:cl.ink40,cursor:"pointer"}}>{r}</button>)}</div></div>
+          </div>
+          {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(13),color:"#8B4D4D"}}>{err}</div>}
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{setShow(false);setErr(null)}} style={{flex:1,padding:"9px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button>
+            <button onClick={add} disabled={!ne||!np||busy} style={{flex:1,padding:"9px 0",background:(ne&&np)?cl.ink:cl.border,color:(ne&&np)?cl.bg:cl.ink40,border:"none",...mono(10),cursor:(ne&&np&&!busy)?"pointer":"not-allowed"}}>{busy?"Creating...":"Create & Invite"}</button>
+          </div>
+        </div>}
+        {users.map((u,i)=>(<div key={u.id} style={{display:"flex",alignItems:"center",padding:"14px 20px",background:i%2===0?cl.surface:"transparent",border:`1px solid ${cl.borderLight}`,borderTop:i===0?undefined:"none"}}><div style={{width:34,height:34,borderRadius:"50%",background:u.role==="admin"?cl.navyWash:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(11),color:u.role==="admin"?cl.navy:cl.ink40,flexShrink:0}}>{(u.name||u.email)[0].toUpperCase()}</div><div style={{flex:1,marginLeft:14}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{...ui(15,500),color:cl.ink}}>{u.name}</span><span style={{...mono(8),padding:"1px 6px",background:u.role==="admin"?cl.navyWash:cl.bg,color:u.role==="admin"?cl.navy:cl.ink40,border:`1px solid ${cl.borderLight}`}}>{u.role}</span>{u.id===currentUserId && <span style={{...mono(7),color:cl.ink20}}>You</span>}</div><div style={{...ui(13,300),color:cl.ink40}}>{u.email}</div></div>{u.id!==currentUserId && <button onClick={()=>remove(u.id)} style={{background:"none",border:`1px solid ${cl.borderLight}`,padding:"5px 12px",...mono(8),color:cl.ink40,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.color=cl.akane}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.color=cl.ink40}}>Remove</button>}</div>))}
       </div>
     </div>
   );
@@ -1306,9 +1348,10 @@ function Users({ users, onUpdate }) {
 // ─── Main ────────────────────────────────────────────────────
 
 export default function Omote() {
-  const [screen, setScreen] = useState("login");
+  const [screen, setScreen] = useState("loading");
   const [user, setUser] = useState(null);
   const [stages, setStages] = useState([]);
+  const [users, setUsers] = useState([]);
   const [activeStage, setActiveStage] = useState(null);
   const [activeCue, setActiveCue] = useState(null);
   const [companyName, setCompanyName] = useState("");
@@ -1317,16 +1360,111 @@ export default function Omote() {
   const [showAbout, setShowAbout] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [pointerConfig, setPointerConfig] = useState(DEFAULT_POINTER);
-  const [users, setUsers] = useState([{ id:"1", name:"Tony", email:"admin", password:"tony1", role:"admin" }]);
+  const [viewAsUser, setViewAsUser] = useState(false);
 
-  const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setScreen("hub"); };
-  const isLoggedIn = screen !== "login";
+  const effectiveRole = viewAsUser ? "user" : (user?.role || "user");
+
+  // ─── Session bootstrap ───
+  useEffect(() => {
+    let sub;
+    const init = async () => {
+      const session = await db.getSession();
+      if (session?.user) {
+        try {
+          const profile = await db.getProfile(session.user.id);
+          setUser(profile);
+          setScreen("hub");
+          loadStages();
+          if (profile.role === "admin") loadUsers();
+        } catch { setScreen("login"); }
+      } else {
+        setScreen("login");
+      }
+    };
+    init();
+    sub = db.onAuthChange((event, session) => {
+      if (event === "SIGNED_OUT") { setUser(null); setScreen("login"); setStages([]); setUsers([]); }
+    });
+    return () => sub?.unsubscribe();
+  }, []);
+
+  const loadStages = async () => {
+    try { const s = await db.getStages(); setStages(s); } catch(e) { console.error("Failed to load stages", e); }
+  };
+  const loadUsers = async () => {
+    try { const u = await db.getAllProfiles(); setUsers(u); } catch(e) { console.error("Failed to load users", e); }
+  };
+
+  const handleLogin = (profile) => {
+    setUser(profile);
+    setShowAbout(true);
+    setScreen("hub");
+    loadStages();
+    if (profile.role === "admin") loadUsers();
+    db.logActivity(profile.id, "login");
+  };
+
+  const handleLogout = async () => {
+    await db.signOut();
+    setUser(null); setScreen("login"); setStages([]); setUsers([]);
+  };
+
+  const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setScreen("hub"); loadStages(); };
+  const isLoggedIn = screen !== "login" && screen !== "loading";
   const isPerforming = screen === "perform";
   const theme = { mode: themeMode };
 
   const startTutorial = () => {
-    const ts = { id:"tutorial-"+Date.now(), name:"Tutorial Stage", description:"Guided walkthrough with sample data", status:"draft", icon:"compass", csvData:null, columns:[], csvFilename:null, cues:[], isTutorial:true };
+    const ts = { id:"tutorial-"+Date.now(), name:"Tutorial Stage", description:"Guided walkthrough with sample data", status:"draft", icon:"compass", csvData:null, columns:[], csvFilename:null, set:{}, cues:[], isTutorial:true };
     setStages(p => [ts, ...p]); setActiveStage(ts); setShowAbout(false); setScreen("backstage");
+  };
+
+  // ─── Stage CRUD (persists to Supabase) ───
+  const handleCreateStage = async (s) => {
+    try {
+      const id = await db.createStage(s, user.id);
+      db.logActivity(user.id, "create_stage", { name: s.name });
+      const full = { ...s, id, set:{}, cues:[], assignedUsers:[] };
+      setStages(p => [...p, full]);
+      setActiveStage(full);
+      setScreen("backstage");
+    } catch(e) { console.error(e); }
+  };
+
+  const handleUpdateStage = async (updated) => {
+    setStages(p => p.map(s => s.id === updated.id ? updated : s));
+    setActiveStage(updated);
+    // Persist — skip for tutorial (no real ID)
+    if (updated.id?.toString().startsWith("tutorial-")) return;
+    try {
+      await db.updateStage(updated.id, {
+        name: updated.name, description: updated.description, icon: updated.icon,
+        status: updated.status, csvData: updated.csvData, columns: updated.columns,
+        csvFilename: updated.csvFilename, set: updated.set,
+      });
+      // Sync cues
+      for (let i = 0; i < (updated.cues || []).length; i++) {
+        const cue = updated.cues[i];
+        const newId = await db.saveCue(updated.id, cue, i);
+        if (cue.id !== newId) updated.cues[i] = { ...cue, id: newId };
+      }
+    } catch(e) { console.error("Save error", e); }
+  };
+
+  const handlePublish = async (p) => {
+    const updated = { ...p, status: "active" };
+    await handleUpdateStage(updated);
+    setActiveStage(updated);
+    setScreen("hub");
+    loadStages();
+  };
+
+  const handleDeleteStage = async (stageId) => {
+    try {
+      await db.deleteStage(stageId);
+      db.logActivity(user.id, "delete_stage", { stageId });
+      setStages(p => p.filter(s => s.id !== stageId));
+    } catch(e) { console.error(e); }
   };
 
   const handleNav = (id) => {
@@ -1343,37 +1481,59 @@ export default function Omote() {
     }
   };
 
+  // Loading screen
+  if (screen === "loading") return (
+    <div style={{ minHeight:"100vh", background:CREAM, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <style>{STYLES}</style>
+      <div style={{ textAlign:"center" }}><StageMark size={44}/><p style={{ ...mono(10), color:WARM, marginTop:16 }}>Loading...</p></div>
+    </div>
+  );
+
   return (
     <ErrorBoundary>
       <ThemeContext.Provider value={theme}>
         <div style={{ fontFamily:"'Source Sans 3',sans-serif", color:themeMode==="dark"?DT.ink:LT.ink, ...(isLoggedIn && !isPerforming ? { display:"flex", height:"100vh", overflow:"hidden" } : {}) }}>
           <style>{STYLES}</style>
 
-          {screen==="login" && <Login users={users} onLogin={u=>{setUser(u);setShowAbout(true);setScreen("hub")}}/>}
+          {screen==="login" && <Login onLogin={handleLogin}/>}
 
-          {isLoggedIn && !isPerforming && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={user} stages={stages} activeStageId={activeStage?.id}/>}
+          {isLoggedIn && !isPerforming && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={{...user, role:effectiveRole}} stages={stages} activeStageId={activeStage?.id}/>}
 
           {showAbout && <AboutModal onClose={()=>setShowAbout(false)} onTutorial={startTutorial}/>}
 
           {isLoggedIn && !isPerforming && (
             <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column" }}>
-              {screen==="hub" && <Hub stages={stages} role={user?.role}
+              {/* View as User toggle + Sign Out — top bar */}
+              {user?.role === "admin" && (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:12, padding:"6px 20px", borderBottom:`1px solid ${themeMode==="dark"?DT.borderLight:LT.borderLight}`, background:themeMode==="dark"?DT.surface:LT.surface }}>
+                  <button onClick={()=>setViewAsUser(!viewAsUser)} style={{ padding:"4px 12px", background:viewAsUser?"rgba(139,77,77,0.08)":"transparent", border:`1px solid ${viewAsUser?"rgba(139,77,77,0.3)":(themeMode==="dark"?DT.borderLight:LT.borderLight)}`, ...mono(8), color:viewAsUser?"#8B4D4D":(themeMode==="dark"?DT.ink40:LT.ink40), cursor:"pointer" }}>{viewAsUser?"Exit Test User":"View as User"}</button>
+                  <button onClick={handleLogout} style={{ padding:"4px 12px", background:"transparent", border:`1px solid ${themeMode==="dark"?DT.borderLight:LT.borderLight}`, ...mono(8), color:themeMode==="dark"?DT.ink40:LT.ink40, cursor:"pointer" }}>Sign Out</button>
+                </div>
+              )}
+              {!user?.role === "admin" && (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", padding:"6px 20px", borderBottom:`1px solid ${themeMode==="dark"?DT.borderLight:LT.borderLight}`, background:themeMode==="dark"?DT.surface:LT.surface }}>
+                  <button onClick={handleLogout} style={{ padding:"4px 12px", background:"transparent", border:`1px solid ${themeMode==="dark"?DT.borderLight:LT.borderLight}`, ...mono(8), color:themeMode==="dark"?DT.ink40:LT.ink40, cursor:"pointer" }}>Sign Out</button>
+                </div>
+              )}
+
+              {screen==="hub" && <Hub stages={stages} role={effectiveRole}
                 onSelect={s=>{setActiveStage(s);setScreen("audience")}}
                 onEdit={s=>{setActiveStage(s);setScreen("backstage")}}
-                onCreate={s=>{setStages(p=>[...p,s]);setActiveStage(s);setScreen("backstage")}}
+                onCreate={handleCreateStage}
+                onDelete={handleDeleteStage}
                 onTutorial={startTutorial}/>}
 
-              {screen==="users" && <Users users={users} onUpdate={setUsers}/>}
+              {screen==="users" && <Users users={users} onRefresh={loadUsers} currentUserId={user?.id}/>}
               {screen==="personal-settings" && <PersonalSettings user={user} themeMode={themeMode} setThemeMode={setThemeMode}/>}
               {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerConfig}/>}
               {screen==="storyteller" && <StorytellerSettings stages={stages}/>}
 
               {screen==="backstage" && activeStage && <Backstage workspace={activeStage} isTutorial={activeStage?.isTutorial}
-                onUpdate={u=>{setStages(p=>p.map(s=>s.id===u.id?u:s));setActiveStage(u)}}
-                onPublish={p=>{setStages(prev=>prev.map(s=>s.id===p.id?p:s));setActiveStage(p);setScreen("hub")}}/>}
+                onUpdate={handleUpdateStage}
+                onPublish={handlePublish}/>}
 
               {screen==="audience" && activeStage && <AudienceSetup stage={activeStage} companyName={companyName} setCompanyName={setCompanyName} persona={persona} setPersona={setPersona}
-                onNext={()=>setScreen("cue-select")}/>}
+                onNext={()=>{db.logActivity(user.id,"perform",{stage:activeStage.name,company:companyName});setScreen("cue-select")}}/>}
 
               {screen==="cue-select" && activeStage && <CueSelect stage={activeStage} companyName={companyName}
                 onSelect={v=>{setActiveCue(v);setScreen("perform")}}/>}
