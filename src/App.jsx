@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.5 — Demo Stage Designer
+// OMOTE mk6.7 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -240,13 +240,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.5</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.7</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.5</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.7</span>
           </div>
         )}
       </div>
@@ -342,6 +342,49 @@ function transformJsx(code) {
   catch(e) { return { code:null, error:e.message }; }
 }
 
+// ─── Banner System ───────────────────────────────────────────
+
+const BANNER_PRESETS = [
+  { id:"safe-harbor", bg:"#F0EBDB", color:"#7A6518", border:"#E8D9A0", label:"Safe Harbor" },
+  { id:"confidential", bg:"#EDE8F5", color:"#5B3E8A", border:"#D4C8E8", label:"Confidential" },
+  { id:"beta", bg:"#E3F2ED", color:"#2D6A4F", border:"#B7DBC8", label:"Beta" },
+  { id:"internal", bg:"#E8EEF5", color:"#3A5A8C", border:"#C4D4E8", label:"Internal Only" },
+  { id:"roadmap", bg:"#F5EDE3", color:"#8C6A3A", border:"#E8D4B8", label:"Roadmap" },
+  { id:"alert", bg:"#F5E3E3", color:"#8B4D4D", border:"#E8B8B8", label:"Alert" },
+];
+
+const BANNER_ICONS = [
+  { id:"none", label:"None", html:"" },
+  { id:"dot", label:"Dot", html:'<span style="font-size:8px">&#9679;</span>' },
+  { id:"shield", label:"Shield", html:'<span style="font-size:14px">&#128737;</span>' },
+  { id:"lock", label:"Lock", html:'<span style="font-size:13px">&#128274;</span>' },
+  { id:"star", label:"Star", html:'<span style="font-size:13px">&#9733;</span>' },
+  { id:"warning", label:"Warning", html:'<span style="font-size:13px">&#9888;</span>' },
+  { id:"info", label:"Info", html:'<span style="font-size:13px">&#8505;</span>' },
+  { id:"eye", label:"Preview", html:'<span style="font-size:13px">&#128065;</span>' },
+];
+
+function parseBanner(banner) {
+  if (!banner) return null;
+  if (typeof banner === "string") return { text:banner, bg:"#F0EBDB", color:"#7A6518", border:"#E8D9A0", align:"left", icon:"dot" };
+  return { text:banner.text||"", bg:banner.bg||"#F0EBDB", color:banner.color||"#7A6518", border:banner.border||"#E8D9A0", align:banner.align||"left", icon:banner.icon||"dot" };
+}
+
+function bannerToHtml(banner) {
+  const b = parseBanner(banner);
+  if (!b || !b.text) return "";
+  const iconHtml = (BANNER_ICONS.find(i=>i.id===b.icon)||BANNER_ICONS[1]).html;
+  const align = b.align === "center" ? "justify-content:center;text-align:center" : b.align === "right" ? "justify-content:flex-end;text-align:right" : "";
+  return `<div style="background:${b.bg};border-bottom:1px solid ${b.border};padding:10px 24px;font-family:-apple-system,sans-serif;font-size:13px;color:${b.color};display:flex;align-items:center;gap:8px;${align}">${iconHtml}${b.text}</div>`;
+}
+
+function BannerBadge({ banner }) {
+  const b = parseBanner(banner);
+  if (!b?.text) return null;
+  const iconHtml = (BANNER_ICONS.find(i=>i.id===b.icon)||BANNER_ICONS[1]).html;
+  return <div style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", background:b.bg, border:`1px solid ${b.border}`, fontSize:12, color:b.color, fontFamily:"'Source Sans 3',sans-serif", fontWeight:300 }}><span dangerouslySetInnerHTML={{ __html:iconHtml }}/>{b.text}</div>;
+}
+
 // ─── Frame Components ────────────────────────────────────────
 
 function JsxFrame({ jsxCode, data, company, banner }) {
@@ -354,7 +397,7 @@ function JsxFrame({ jsxCode, data, company, banner }) {
     setTranspileError(null);
     const sd = Array.isArray(data) ? data : [];
     const dn = company || "Company";
-    const bh = banner ? '<div style="background:#F0EBDB;border-bottom:1px solid #E8D9A0;padding:10px 24px;font-family:-apple-system,sans-serif;font-size:13px;color:#7A6518;display:flex;align-items:center;gap:8px"><span style="font-size:8px">&#9679;</span>' + banner + '</div>' : "";
+    const bh = bannerToHtml(banner);
     const loaderHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}#root{min-height:100vh}</style><link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"></head><body>${bh}<div id="root"><div style="padding:40px;text-align:center;color:#999">Loading...</div></div><script>window.addEventListener("message",function(e){if(!e.data||e.data.type!=="omote-runtime")return;try{window.process={env:{NODE_ENV:"production"}};var fn=new Function(e.data.runtime);fn();window.__DEMO_DATA__=e.data.data;window.__COMPANY_NAME__=e.data.company;var fn2=new Function(e.data.code);fn2();var Component=window.__OMOTE_COMPONENT__;if(Component){var root=ReactDOM.createRoot(document.getElementById("root"));root.render(React.createElement(Component,{data:window.__DEMO_DATA__,companyName:window.__COMPANY_NAME__}))}else{document.getElementById("root").innerHTML="<div style='padding:40px;text-align:center;color:#999'>No component exported.</div>"}}catch(err){document.getElementById("root").innerHTML="<div style='padding:40px;font-family:monospace'><div style='color:#c44;font-weight:bold;margin-bottom:8px'>Runtime Error</div><pre style='background:#fff5f5;padding:16px;border:1px solid #fcc;overflow:auto;font-size:12px;white-space:pre-wrap'>"+err.message+"</pre></div>";console.error(err)}});window.parent.postMessage({type:"omote-ready"},"*");<\/script></body></html>`;
     const iframe = iframeRef.current; if (!iframe) return;
     const handleMsg = (e) => { if (e.data?.type === "omote-ready") iframe.contentWindow.postMessage({ type:"omote-runtime", runtime:OMOTE_RUNTIME, code, data:sd.slice(0,100), company:dn }, "*"); };
@@ -370,7 +413,7 @@ function HtmlFrame({ html, data, company, banner }) {
   const [blobUrl, setBlobUrl] = useState(null);
   const sd = Array.isArray(data)?data:[]; const dn = company||"Company";
   const ds2 = `<script>window.__DEMO_DATA__=${JSON.stringify(sd.slice(0,100))};window.__COMPANY_NAME__=${JSON.stringify(dn)};<\/script>`;
-  const bh = banner?`<div style="background:#F0EBDB;border-bottom:1px solid #E8D9A0;padding:10px 24px;font-family:-apple-system,sans-serif;font-size:13px;color:#7A6518;display:flex;align-items:center;gap:8px;position:fixed;top:0;left:0;right:0;z-index:9999"><span style="font-size:8px">&#9679;</span>${banner}</div>`:"";
+  const bh = bannerToHtml(banner);
   const raw = (html||"").replace(/\{\{COMPANY_NAME\}\}/g,dn);
   const isFull = raw.includes("<!DOCTYPE")||raw.includes("<html");
   useEffect(() => {
@@ -638,13 +681,29 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }
     <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
       <div ref={containerRef} style={{ display:"flex", flex:1, overflow:"hidden" }}>
         <div style={{ width:chatWidth, minWidth:280, maxWidth:"70%", flexShrink:0, display:"flex", flexDirection:"column", background:cl.surface }}>
-          <div style={{ padding:"0 18px", minHeight:42, display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:`1px solid ${cl.borderLight}` }}>
+          <div style={{ padding:"0 18px", minHeight:42, display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:`1px solid ${cl.borderLight}`, position:"relative" }}>
             <span style={{ ...mono(9), color:cl.ink40 }}>Canvas</span>
             <div style={{ display:"flex", gap:8 }}>
               {editBanner ? (
-                <div style={{ display:"flex", gap:6 }}><input type="text" value={bannerDraft} onChange={e=>setBannerDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){onUpdate({...set,banner:bannerDraft.trim()});setEditBanner(false)}}} style={{ padding:"4px 8px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(12), color:cl.ink, outline:"none", width:200 }} autoFocus/><button onClick={()=>{onUpdate({...set,banner:bannerDraft.trim()});setEditBanner(false)}} style={{ padding:"4px 10px", background:cl.ink, color:cl.bg, border:"none", ...mono(7), cursor:"pointer" }}>Save</button></div>
+                <div className="fadein" style={{ position:"absolute", top:42, left:0, right:0, background:cl.surface, borderBottom:`1px solid ${cl.borderLight}`, padding:"16px 18px", zIndex:20, boxShadow:"0 4px 16px rgba(0,0,0,0.06)" }}>
+                  {(() => { const b = parseBanner(bannerDraft) || { text:"", bg:"#F0EBDB", color:"#7A6518", border:"#E8D9A0", align:"left", icon:"dot" }; const upd = (k,v) => setBannerDraft({...b,[k]:v}); return (<>
+                    <div style={{ marginBottom:12 }}><label style={{ ...mono(8), color:cl.ink40, display:"block", marginBottom:5 }}>Text</label><input type="text" value={b.text} onChange={e=>upd("text",e.target.value)} placeholder="e.g. Safe Harbor: Forward-looking features" style={{ width:"100%", padding:"8px 10px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(14), color:cl.ink, outline:"none" }} autoFocus/></div>
+                    <div style={{ marginBottom:12 }}><label style={{ ...mono(8), color:cl.ink40, display:"block", marginBottom:5 }}>Color Preset</label><div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>{BANNER_PRESETS.map(p => (<div key={p.id} onClick={()=>setBannerDraft({...b,bg:p.bg,color:p.color,border:p.border})} style={{ padding:"5px 10px", background:p.bg, border:`1px solid ${b.bg===p.bg?p.color:p.border}`, ...mono(8), color:p.color, cursor:"pointer", transition:"all 0.15s" }}>{p.label}</div>))}</div></div>
+                    <div style={{ display:"flex", gap:16, marginBottom:12 }}>
+                      <div><label style={{ ...mono(8), color:cl.ink40, display:"block", marginBottom:5 }}>Align</label><div style={{ display:"flex", border:`1px solid ${cl.border}` }}>{["left","center","right"].map(a => (<button key={a} onClick={()=>upd("align",a)} style={{ padding:"5px 10px", background:b.align===a?cl.navyWash:"transparent", border:"none", ...mono(8), color:b.align===a?cl.navy:cl.ink40, cursor:"pointer" }}>{a}</button>))}</div></div>
+                      <div><label style={{ ...mono(8), color:cl.ink40, display:"block", marginBottom:5 }}>Icon</label><div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>{BANNER_ICONS.map(ic => (<div key={ic.id} onClick={()=>upd("icon",ic.id)} style={{ width:28, height:28, display:"flex", alignItems:"center", justifyContent:"center", border:`1px solid ${b.icon===ic.id?cl.navy:cl.borderLight}`, background:b.icon===ic.id?cl.navyWash:"transparent", cursor:"pointer", fontSize:12 }} title={ic.label} dangerouslySetInnerHTML={{ __html:ic.html||"—" }}/>))}</div></div>
+                    </div>
+                    {/* Preview */}
+                    {b.text && <div style={{ marginBottom:12 }}><label style={{ ...mono(8), color:cl.ink40, display:"block", marginBottom:5 }}>Preview</label><div dangerouslySetInnerHTML={{ __html:bannerToHtml(b) }}/></div>}
+                    <div style={{ display:"flex", gap:6 }}>
+                      <button onClick={()=>{onUpdate({...set,banner:bannerDraft.text?bannerDraft:""});setEditBanner(false)}} style={{ padding:"6px 14px", background:cl.ink, color:cl.bg, border:"none", ...mono(8), cursor:"pointer" }}>Save</button>
+                      <button onClick={()=>{onUpdate({...set,banner:""});setEditBanner(false);setBannerDraft("")}} style={{ padding:"6px 14px", background:"none", border:`1px solid ${cl.borderLight}`, ...mono(8), color:cl.ink40, cursor:"pointer" }}>Remove</button>
+                      <button onClick={()=>setEditBanner(false)} style={{ padding:"6px 14px", background:"none", border:"none", ...mono(8), color:cl.ink40, cursor:"pointer" }}>Cancel</button>
+                    </div>
+                  </>); })()}
+                </div>
               ) : (
-                <button onClick={()=>{setBannerDraft(set.banner||"");setEditBanner(true)}} style={{ padding:"4px 10px", background:"none", border:`1px solid ${cl.borderLight}`, ...mono(8), color:cl.ink40, cursor:"pointer" }}>{set.banner?"Edit Banner":"Banner"}</button>
+                <button onClick={()=>{setBannerDraft(parseBanner(set.banner)||{text:"",bg:"#F0EBDB",color:"#7A6518",border:"#E8D9A0",align:"left",icon:"dot"});setEditBanner(true)}} style={{ padding:"4px 10px", background:"none", border:`1px solid ${cl.borderLight}`, ...mono(8), color:cl.ink40, cursor:"pointer" }}>{set.banner?"Edit Banner":"Banner"}</button>
               )}
               <button onClick={onComplete} style={{ padding:"4px 14px", background:cl.matcha, color:"#fff", border:"none", ...mono(8), cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}><OIcon name="success" size={12} color="#fff"/> Done</button>
             </div>
@@ -838,7 +897,7 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
                     <span style={{ ...ds(20), color:cl.ink }}>{v.name}</span>
                     <span style={{ ...mono(8), color:(v.shellHtml||v.jsxCode)?cl.matcha:cl.ink20 }}>{(v.shellHtml||v.jsxCode)?"● Ready":"○ Empty"}</span>
                   </div>
-                  {v.banner && <p style={{ ...ui(13,300), color:cl.gold }}>{v.banner}</p>}
+                  {v.banner && <div style={{ marginTop:4 }}><BannerBadge banner={v.banner}/></div>}
                 </div>
                 <div style={{ display:"flex", gap:6 }}>
                   <button onClick={()=>setEditingCue(v)} title="Edit cue" style={{ padding:"8px 10px", background:"none", border:`1px solid ${cl.borderLight}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.navyWash}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="edit" size={15} color={cl.ink60}/></button>
@@ -924,7 +983,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.5</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.7</div>
       </div>
     </div>
   );
@@ -1044,7 +1103,7 @@ function CueSelect({ stage, companyName, onSelect }) {
         <span style={{...mono(10),padding:"3px 10px",background:cl.navyWash,color:cl.navy,marginBottom:12,display:"inline-block"}}>{stage.name}</span>
         <h2 style={{...ds(34),color:cl.ink,marginBottom:8}}>Select Cue</h2>
         <p style={{...ui(16,300),color:cl.ink60,marginBottom:40}}>Choose which version to perform for {companyName}.</p>
-        {cues.map(v=>(<div key={v.id} onClick={()=>onSelect(v)} style={{padding:"22px 26px",border:`1px solid ${cl.borderLight}`,background:cl.surface,cursor:"pointer",marginBottom:10,transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}><div style={{...ds(22),color:cl.ink,marginBottom:4}}>{v.name}</div>{v.banner && <p style={{...ui(13,300),color:cl.gold}}>{v.banner}</p>}</div>))}
+        {cues.map(v=>(<div key={v.id} onClick={()=>onSelect(v)} style={{padding:"22px 26px",border:`1px solid ${cl.borderLight}`,background:cl.surface,cursor:"pointer",marginBottom:10,transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}><div style={{...ds(22),color:cl.ink,marginBottom:4}}>{v.name}</div>{v.banner && <div style={{marginTop:4}}><BannerBadge banner={v.banner}/></div>}</div>))}
         {cues.length===0 && <div style={{padding:32,border:`1px dashed ${cl.border}`,textAlign:"center"}}><p style={{...ui(15,300),color:cl.ink40}}>No designed cues</p></div>}
       </div>
     </div>
