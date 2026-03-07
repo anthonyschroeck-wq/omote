@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.18 — Demo Stage Designer
+// OMOTE mk6.19 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -244,13 +244,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.18</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.19</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.18</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.19</span>
           </div>
         )}
       </div>
@@ -1058,7 +1058,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.18</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.19</div>
       </div>
     </div>
   );
@@ -1974,6 +1974,30 @@ export default function Omote() {
     ? stages.filter(s => (s.assignedUsers || []).includes(impersonating.id))
     : stages;
 
+  // ─── Load prefs from profile ───
+  const applyPrefs = (profile) => {
+    const prefs = profile?.flags?.prefs;
+    if (!prefs) return;
+    if (prefs.themeMode) setThemeMode(prefs.themeMode);
+    if (prefs.pointerConfig) setPointerConfig(prev => ({ ...prev, ...prefs.pointerConfig }));
+  };
+
+  // ─── Save prefs to Supabase (debounced) ───
+  const savePrefsTimer = useRef(null);
+  const savePrefs = useCallback((newTheme, newPointer) => {
+    if (!user?.id) return;
+    clearTimeout(savePrefsTimer.current);
+    savePrefsTimer.current = setTimeout(() => {
+      const currentFlags = user.flags || {};
+      const newFlags = { ...currentFlags, prefs: { themeMode: newTheme, pointerConfig: newPointer } };
+      db.updateProfile(user.id, { flags: newFlags }).catch(() => {});
+    }, 800);
+  }, [user?.id, user?.flags]);
+
+  // ─── Wrapped setters that persist ───
+  const setThemePersist = (m) => { setThemeMode(m); savePrefs(m, pointerConfig); };
+  const setPointerPersist = (c) => { setPointerConfig(c); savePrefs(themeMode, c); };
+
   // ─── Session bootstrap ───
   useEffect(() => {
     let sub;
@@ -1983,6 +2007,7 @@ export default function Omote() {
         try {
           const profile = await db.getProfile(session.user.id);
           setUser(profile);
+          applyPrefs(profile);
           setScreen("hub");
           loadStages();
           if (isAdminRole(profile.role)) loadUsers();
@@ -2007,6 +2032,7 @@ export default function Omote() {
 
   const handleLogin = (profile) => {
     setUser(profile);
+    applyPrefs(profile);
     setShowAbout(true);
     setScreen("hub");
     loadStages();
@@ -2195,9 +2221,9 @@ export default function Omote() {
                 onTutorial={startTutorial}/>}
 
               {screen==="users" && <Users users={users} stages={stages} onRefresh={loadUsers} currentUserId={user?.id} currentUserRole={user?.role} onImpersonate={isAdminRole(user?.role)?setImpersonating:null} onUpdateFlags={handleUpdateFlags}/>}
-              {screen==="personal-settings" && <PersonalSettings user={user} themeMode={themeMode} setThemeMode={setThemeMode}/>}
+              {screen==="personal-settings" && <PersonalSettings user={user} themeMode={themeMode} setThemeMode={setThemePersist}/>}
               {screen==="help" && <HelpPage onTutorial={startTutorial}/>}
-              {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerConfig}/>}
+              {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerPersist}/>}
               {screen==="storyteller" && <StorytellerSettings stages={visibleStages}/>}
 
               {screen==="backstage" && activeStage && <Backstage workspace={activeStage} aiEnabled={user?.role==="super-admin" || !!(user?.flags?.ai_builder)} isTutorial={!!activeStage?.isTutorial}
