@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.7 — Demo Stage Designer
+// OMOTE mk6.9 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -165,7 +165,7 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
     { id:"settings", icon:"settings", label:"Settings" },
     { id:"help", icon:"help", label:"Help" },
   ];
-  if (user?.role === "admin") items.push({ id:"admin", icon:"admin", label:"Admin" });
+  if (user?.role === "admin" || user?.role === "super-admin") items.push({ id:"admin", icon:"admin", label:"Admin" });
   items.push({ id:"pointer", icon:"pointer", label:"Pointer" });
   items.push({ id:"storyteller", icon:"storyteller", label:"Storyteller" });
 
@@ -240,13 +240,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.7</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.9</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.7</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.9</span>
           </div>
         )}
       </div>
@@ -776,11 +776,10 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
   const updateSet = (s) => { onUpdate({ ...workspace, set:s, csvData, columns, csvFilename:csvFile }); };
   const onSetComplete = () => { setNamingFirst(true); setTab("cues"); };
 
-  const createCue = (name, banner, source) => {
+  const createCue = (name, desc, source) => {
     if (!name.trim()) return;
-    // Source: clone from a specific cue, or from the set, or blank
-    const base = source ? { shellHtml:source.shellHtml||"", jsxCode:source.jsxCode||"", method:source.method } : (hasSet ? { shellHtml:set.shellHtml||"", jsxCode:set.jsxCode||"", method:set.method } : { shellHtml:"", jsxCode:"", method:null });
-    const cue = { id:Date.now().toString(), name:name.trim(), banner:(banner||"").trim(), ...base, notes:[], messages:[] };
+    const base = source ? { shellHtml:source.shellHtml||"", jsxCode:source.jsxCode||"", method:source.method, banner:source.banner } : (hasSet ? { shellHtml:set.shellHtml||"", jsxCode:set.jsxCode||"", method:set.method, banner:set.banner } : { shellHtml:"", jsxCode:"", method:null, banner:"" });
+    const cue = { id:Date.now().toString(), name:name.trim(), description:(desc||"").trim(), ...base, notes:[], messages:[] };
     const list = [...cues, cue];
     onUpdate({ ...workspace, cues:list, csvData, columns, csvFilename:csvFile });
     setNamingFirst(false); setShowNewCue(false); setCn(""); setCb(""); setCloneFrom(null);
@@ -862,7 +861,7 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
                 <h4 style={{ ...ds(20), color:cl.ink, marginBottom:6 }}>Save as your first cue</h4>
                 <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:16 }}>Your stage is built. Save it as a cue to make it performable. You can create more cues later.</p>
                 <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Cue Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb,null)}} placeholder="e.g. Default, Current Product, Q3 Roadmap" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
-                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Banner <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Safe Harbor: Features shown are 6+ months out" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
+                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Description <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Default demo flow for enterprise prospects" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
                 <button onClick={()=>createCue(cn,cb,null)} disabled={!cn.trim()} style={{ padding:"10px 24px", background:cn.trim()?cl.ink:cl.border, color:cn.trim()?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:cn.trim()?"pointer":"not-allowed" }}>Save Cue</button>
               </div>
             )}
@@ -881,7 +880,7 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
                   </div>
                 </div>
                 <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb,cloneFrom)}} placeholder="e.g. Long-Term Vision, Safe Harbor Demo" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
-                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Banner <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Safe Harbor: Features shown are 6+ months out" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
+                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Description <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Tailored for CHRO audience, emphasizes analytics" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
                 <div style={{ display:"flex", gap:8 }}>
                   <button onClick={()=>{setShowNewCue(false);setCn("");setCb("");setCloneFrom(null)}} style={{ flex:1, padding:"10px 0", background:"none", border:`1px solid ${cl.border}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>Cancel</button>
                   <button onClick={()=>createCue(cn,cb,cloneFrom)} disabled={!cn.trim()} style={{ flex:1, padding:"10px 0", background:cn.trim()?cl.ink:cl.border, color:cn.trim()?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:cn.trim()?"pointer":"not-allowed" }}>{cloneFrom?"Clone & Create":"Create Empty"}</button>
@@ -897,7 +896,7 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
                     <span style={{ ...ds(20), color:cl.ink }}>{v.name}</span>
                     <span style={{ ...mono(8), color:(v.shellHtml||v.jsxCode)?cl.matcha:cl.ink20 }}>{(v.shellHtml||v.jsxCode)?"● Ready":"○ Empty"}</span>
                   </div>
-                  {v.banner && <div style={{ marginTop:4 }}><BannerBadge banner={v.banner}/></div>}
+                  {v.description && <p style={{ ...ui(13,300), color:cl.ink60, marginTop:2 }}>{v.description}</p>}
                 </div>
                 <div style={{ display:"flex", gap:6 }}>
                   <button onClick={()=>setEditingCue(v)} title="Edit cue" style={{ padding:"8px 10px", background:"none", border:`1px solid ${cl.borderLight}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.navyWash}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="edit" size={15} color={cl.ink60}/></button>
@@ -983,7 +982,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.7</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.9</div>
       </div>
     </div>
   );
@@ -1014,7 +1013,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
                 </div>
                 <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:4 }}>{s.description}</p>
                 {s.cues?.length>0 && <p style={{...mono(8),color:cl.ink20,marginBottom:4}}>{s.cues.length} cue{s.cues.length!==1?"s":""}</p>}
-                {role==="admin" && (s.assignedUsers||[]).length>0 && (
+                {isAdminRole(role) && (s.assignedUsers||[]).length>0 && (
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14}}>
                     <OIcon name="team" size={12} color={cl.ink20}/>
                     <div style={{display:"flex",marginLeft:2}}>
@@ -1028,10 +1027,10 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
                     <span style={{...mono(7),color:cl.ink20}}>{(s.assignedUsers||[]).length} user{(s.assignedUsers||[]).length!==1?"s":""}</span>
                   </div>
                 )}
-                {role==="admin" && (s.assignedUsers||[]).length===0 && <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14,...mono(8),color:cl.ink20,opacity:0.5}}>No users assigned</div>}
+                {isAdminRole(role) && (s.assignedUsers||[]).length===0 && <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14,...mono(8),color:cl.ink20,opacity:0.5}}>No users assigned</div>}
                 <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                   {s.status==="active"&&s.cues?.some(v=>v.shellHtml||v.jsxCode)?(<button onClick={()=>onSelect(s)} style={{flex:1,padding:"10px 0",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Perform</button>):(<button onClick={()=>onEdit(s)} style={{flex:1,padding:"10px 0",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Configure</button>)}
-                  {role==="admin" && <>
+                  {isAdminRole(role) && <>
                     {s.status==="active" && <button title="Edit" onClick={()=>onEdit(s)} style={{padding:"8px 10px",background:"none",border:`1px solid ${cl.borderLight}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.navyWash}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="edit" size={15} color={cl.ink60}/></button>}
                     <button title="Share with users" onClick={()=>setShareModal(s)} style={{padding:"8px 10px",background:"none",border:`1px solid ${cl.borderLight}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.navyWash}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="share" size={15} color={cl.ink60}/></button>
                     <button title="Delete stage" onClick={(e)=>{e.stopPropagation();if(confirm("Delete stage '"+s.name+"'? This cannot be undone."))onDelete(s.id)}} style={{padding:"8px 10px",background:"none",border:`1px solid ${cl.borderLight}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.background="rgba(139,77,77,0.04)"}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="trash" size={15} color={cl.ink40}/></button>
@@ -1040,14 +1039,14 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
               </div>
             </div>
           ))}
-          {role==="admin" && <div className="breathe" style={{ animationDelay:`${0.15+stages.length*0.05}s` }}><div onClick={()=>setModal(true)} style={{padding:"24px 28px",border:`1px dashed ${cl.border}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:160,gap:14,transition:"all 0.3s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.surface}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.border;e.currentTarget.style.background="transparent"}}><OIcon name="plus" size={18} color={cl.ink40}/><span style={{...mono(10),color:cl.ink40}}>New Stage</span></div></div>}
+          {isAdminRole(role) && <div className="breathe" style={{ animationDelay:`${0.15+stages.length*0.05}s` }}><div onClick={()=>setModal(true)} style={{padding:"24px 28px",border:`1px dashed ${cl.border}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:160,gap:14,transition:"all 0.3s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.surface}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.border;e.currentTarget.style.background="transparent"}}><OIcon name="plus" size={18} color={cl.ink40}/><span style={{...mono(10),color:cl.ink40}}>New Stage</span></div></div>}
         </div>
       </div>
       {modal && (<><div className="fadein" onClick={reset} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}><div style={{padding:28}}><h3 style={{...ds(24),color:cl.ink,marginBottom:24}}>New Stage</h3><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni});reset()}}} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Description</label><input type="text" value={nd} onChange={e=>setNd(e.target.value)} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}}/></div><div style={{marginBottom:24}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Icon</label><IconPicker value={ni} onChange={setNi}/></div><div style={{display:"flex",gap:10}}><button onClick={reset} style={{flex:1,padding:"10px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button><button onClick={()=>{if(nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni});reset()}}} disabled={!nn.trim()} style={{flex:1,padding:"10px 0",background:nn.trim()?cl.ink:cl.border,color:nn.trim()?cl.bg:cl.ink40,border:"none",...mono(10),cursor:nn.trim()?"pointer":"not-allowed"}}>Create</button></div></div></div></>)}
       {shareModal && (<><div className="fadein" onClick={()=>setShareModal(null)} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)",maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
         <div style={{padding:"24px 28px 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}><OIcon name={shareModal.icon||"cube"} size={20} color={cl.navy}/><h3 style={{...ds(22),color:cl.ink}}>Share Stage</h3></div><p style={{...ui(14,300),color:cl.ink60}}>Select users who can access <strong>{shareModal.name}</strong></p></div>
         <div style={{flex:1,overflow:"auto",padding:"0 28px 24px"}}>
-          {(() => { const shareUsers = [TEST_USER, ...(users||[]).filter(u=>u.role!=="admin")]; return shareUsers.length===0 ? <div style={{padding:"20px 0",textAlign:"center",...ui(14,300),color:cl.ink40}}>No users to share with. Invite users first.</div> : shareUsers.map(u => {
+          {(() => { const shareUsers = [TEST_USER, ...(users||[]).filter(u=>!isAdminRole(u.role))]; return shareUsers.length===0 ? <div style={{padding:"20px 0",textAlign:"center",...ui(14,300),color:cl.ink40}}>No users to share with. Invite users first.</div> : shareUsers.map(u => {
             const assigned = (shareModal.assignedUsers||[]).includes(u.id);
             const isTest = u.id === TEST_USER.id;
             return (
@@ -1103,7 +1102,7 @@ function CueSelect({ stage, companyName, onSelect }) {
         <span style={{...mono(10),padding:"3px 10px",background:cl.navyWash,color:cl.navy,marginBottom:12,display:"inline-block"}}>{stage.name}</span>
         <h2 style={{...ds(34),color:cl.ink,marginBottom:8}}>Select Cue</h2>
         <p style={{...ui(16,300),color:cl.ink60,marginBottom:40}}>Choose which version to perform for {companyName}.</p>
-        {cues.map(v=>(<div key={v.id} onClick={()=>onSelect(v)} style={{padding:"22px 26px",border:`1px solid ${cl.borderLight}`,background:cl.surface,cursor:"pointer",marginBottom:10,transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}><div style={{...ds(22),color:cl.ink,marginBottom:4}}>{v.name}</div>{v.banner && <div style={{marginTop:4}}><BannerBadge banner={v.banner}/></div>}</div>))}
+        {cues.map(v=>(<div key={v.id} onClick={()=>onSelect(v)} style={{padding:"22px 26px",border:`1px solid ${cl.borderLight}`,background:cl.surface,cursor:"pointer",marginBottom:10,transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}><div style={{...ds(22),color:cl.ink,marginBottom:4}}>{v.name}</div>{v.description && <p style={{...ui(14,300),color:cl.ink60}}>{v.description}</p>}{v.banner && <div style={{marginTop:6}}><BannerBadge banner={v.banner}/></div>}</div>))}
         {cues.length===0 && <div style={{padding:32,border:`1px dashed ${cl.border}`,textAlign:"center"}}><p style={{...ui(15,300),color:cl.ink40}}>No designed cues</p></div>}
       </div>
     </div>
@@ -1116,9 +1115,33 @@ const DEFAULT_POINTER = {
   penColor: "#C4A855",
   penWidth: 3,
   spotlightRadius: 120,
+  fadeEnabled: true,
   fadeSeconds: 4,
-  hotkeys: { toggle: "p", pen: "d", spotlight: "s", undo: "z", clear: "c" },
+  hotkeys: {
+    toggle: { key:"p", ctrl:false, shift:false },
+    pen: { key:"d", ctrl:false, shift:false },
+    spotlight: { key:"s", ctrl:false, shift:false },
+    box: { key:"b", ctrl:false, shift:false },
+    undo: { key:"z", ctrl:true, shift:false },
+    clear: { key:"c", ctrl:true, shift:true },
+  },
 };
+
+function formatHotkey(hk) {
+  if (typeof hk === "string") return hk.toUpperCase();
+  const parts = [];
+  if (hk.ctrl) parts.push("Ctrl");
+  if (hk.shift) parts.push("Shift");
+  parts.push(hk.key.toUpperCase());
+  return parts.join("+");
+}
+
+function matchesHotkey(e, hk) {
+  if (typeof hk === "string") return e.key.toLowerCase() === hk;
+  return e.key.toLowerCase() === hk.key && !!e.ctrlKey === !!hk.ctrl && !!e.shiftKey === !!hk.shift;
+}
+
+function isAdminRole(role) { return role === "admin" || role === "super-admin"; }
 
 const PEN_COLORS = [
   { label:"Gold", hex:"#C4A855" },
@@ -1133,12 +1156,25 @@ function PointerSettings({ config, onChange }) {
   const cl = c();
   const update = (k, v) => onChange({ ...config, [k]: v });
   const updateHotkey = (k, v) => onChange({ ...config, hotkeys: { ...config.hotkeys, [k]: v } });
+  const [recording, setRecording] = useState(null); // which hotkey is being recorded
+
+  useEffect(() => {
+    if (!recording) return;
+    const handler = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (["Control","Shift","Alt","Meta"].includes(e.key)) return; // wait for the actual key
+      updateHotkey(recording, { key:e.key.toLowerCase(), ctrl:e.ctrlKey, shift:e.shiftKey });
+      setRecording(null);
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
+  }, [recording]);
 
   return (
     <div style={{ height:"100%", overflow:"auto", background:cl.bg, padding:"48px 40px" }}>
       <div style={{ maxWidth:500, margin:"0 auto" }}>
         <h2 style={{ ...ds(32), color:cl.ink, marginBottom:8 }}>Pointer</h2>
-        <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:40 }}>Annotate and spotlight during live performances. Activate with <kbd style={{ ...mono(10), padding:"2px 6px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>{config.hotkeys.toggle.toUpperCase()}</kbd> during Perform.</p>
+        <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:40 }}>Annotate and spotlight during live performances. Activate with <kbd style={{ ...mono(10), padding:"2px 6px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>{formatHotkey(config.hotkeys.toggle)}</kbd> during Perform.</p>
 
         {/* Pen Color */}
         <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
@@ -1181,39 +1217,69 @@ function PointerSettings({ config, onChange }) {
           </div>
         </div>
 
-        {/* Fade */}
+        {/* Auto-fade */}
         <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
-          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Auto-fade</div>
-          <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-            <input type="range" min="1" max="15" step="1" value={config.fadeSeconds} onChange={e => update("fadeSeconds", parseInt(e.target.value))} style={{ flex:1, accentColor:cl.navy }}/>
-            <span style={{ ...mono(10), color:cl.ink60 }}>{config.fadeSeconds}s</span>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:config.fadeEnabled?14:0 }}>
+            <div style={{ ...mono(9), color:cl.ink40 }}>Auto-fade</div>
+            <button onClick={() => update("fadeEnabled", !config.fadeEnabled)} style={{ width:40, height:22, borderRadius:11, background:config.fadeEnabled?cl.navy:cl.border, border:"none", cursor:"pointer", position:"relative", transition:"background 0.2s" }}>
+              <div style={{ width:16, height:16, borderRadius:"50%", background:"#fff", position:"absolute", top:3, left:config.fadeEnabled?21:3, transition:"left 0.2s" }}/>
+            </button>
           </div>
-          <p style={{ ...ui(12,300), color:cl.ink20, marginTop:8 }}>Strokes dissolve after this duration. Double-click a stroke to pin it.</p>
+          {config.fadeEnabled && (
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                <input type="range" min="1" max="15" step="1" value={config.fadeSeconds} onChange={e => update("fadeSeconds", parseInt(e.target.value))} style={{ flex:1, accentColor:cl.navy }}/>
+                <span style={{ ...mono(10), color:cl.ink60 }}>{config.fadeSeconds}s</span>
+              </div>
+              <p style={{ ...ui(12,300), color:cl.ink20, marginTop:8 }}>Strokes dissolve after this duration. Double-click a stroke to pin it.</p>
+            </div>
+          )}
+          {!config.fadeEnabled && <p style={{ ...ui(12,300), color:cl.ink20, marginTop:8 }}>Strokes persist until manually cleared.</p>}
         </div>
 
         {/* Hotkeys */}
         <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
           <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Hotkeys</div>
+          <p style={{ ...ui(12,300), color:cl.ink20, marginBottom:12 }}>Click a key to remap. Press any combo (Ctrl+Z, Shift+S, etc.)</p>
           {[
             { key:"toggle", label:"Toggle Pointer" },
             { key:"pen", label:"Pen Tool" },
             { key:"spotlight", label:"Spotlight" },
+            { key:"box", label:"Box Tool" },
             { key:"undo", label:"Undo" },
             { key:"clear", label:"Clear All" },
           ].map(hk => (
             <div key={hk.key} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${cl.borderLight}` }}>
               <span style={{ ...ui(14,400), color:cl.ink80 }}>{hk.label}</span>
-              <input type="text" value={config.hotkeys[hk.key].toUpperCase()} maxLength={1}
-                onChange={e => { const v = e.target.value.toLowerCase(); if (v.length === 1 && /[a-z]/.test(v)) updateHotkey(hk.key, v); }}
-                style={{ width:40, textAlign:"center", padding:"6px 0", border:`1px solid ${cl.border}`, background:cl.bg, ...mono(12), color:cl.ink, outline:"none" }}
-                onFocus={e => e.target.style.borderColor = cl.navy} onBlur={e => e.target.style.borderColor = cl.border}/>
+              <button onClick={() => setRecording(recording === hk.key ? null : hk.key)} style={{
+                minWidth:60, textAlign:"center", padding:"6px 10px",
+                border:`1px solid ${recording === hk.key ? cl.navy : cl.border}`,
+                background: recording === hk.key ? cl.navyWash : cl.bg,
+                ...mono(11), color: recording === hk.key ? cl.navy : cl.ink, cursor:"pointer", outline:"none",
+              }}>
+                {recording === hk.key ? "..." : formatHotkey(config.hotkeys[hk.key])}
+              </button>
             </div>
           ))}
         </div>
 
+        {/* Tools */}
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Available Tools</div>
+          <div style={{ display:"flex", gap:12 }}>
+            {[{id:"pen",label:"Pen",desc:"Freehand drawing with crayon texture"},{id:"spotlight",label:"Spotlight",desc:"Dim everything except a radial area"},{id:"box",label:"Box",desc:"Draw rectangular highlights with locked corners"}].map(t => (
+              <div key={t.id} style={{ flex:1, padding:"14px 16px", background:cl.bg, border:`1px solid ${cl.borderLight}`, textAlign:"center" }}>
+                <div style={{ ...ui(14,500), color:cl.ink, marginBottom:4 }}>{t.label}</div>
+                <div style={{ ...ui(11,300), color:cl.ink40 }}>{t.desc}</div>
+                <div style={{ ...mono(8), color:cl.navy, marginTop:6 }}>{formatHotkey(config.hotkeys[t.id])}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Preview hint */}
         <div style={{ padding:"18px 24px", background:cl.navyWash, border:`1px solid ${cl.borderLight}` }}>
-          <p style={{ ...ui(14,300), color:cl.navy }}>During Perform, press <kbd style={{ ...mono(10), padding:"1px 5px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>{config.hotkeys.toggle.toUpperCase()}</kbd> to activate the pointer toolbar. A floating bar will appear with pen and spotlight tools.</p>
+          <p style={{ ...ui(14,300), color:cl.navy }}>During Perform, press <kbd style={{ ...mono(10), padding:"1px 5px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>{formatHotkey(config.hotkeys.toggle)}</kbd> to activate the pointer toolbar.</p>
         </div>
       </div>
     </div>
@@ -1225,11 +1291,12 @@ function PointerSettings({ config, onChange }) {
 function PointerOverlay({ config, onExit }) {
   const canvasRef = useRef(null);
   const [active, setActive] = useState(false);
-  const [tool, setTool] = useState("pen"); // "pen" | "spotlight"
+  const [tool, setTool] = useState("pen"); // "pen" | "spotlight" | "box"
   const [drawing, setDrawing] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const strokesRef = useRef([]);
   const currentStroke = useRef(null);
+  const boxStart = useRef(null);
   const animRef = useRef(null);
   const [, forceRender] = useState(0);
   const [barHover, setBarHover] = useState(false);
@@ -1246,14 +1313,14 @@ function PointerOverlay({ config, onExit }) {
   // Hotkey handler
   useEffect(() => {
     const handleKey = (e) => {
-      const k = e.key.toLowerCase();
-      if (k === config.hotkeys.toggle) { setActive(a => !a); e.preventDefault(); }
+      if (matchesHotkey(e, config.hotkeys.toggle)) { setActive(a => !a); e.preventDefault(); return; }
       if (!active) return;
-      if (k === config.hotkeys.pen) { setTool("pen"); e.preventDefault(); }
-      if (k === config.hotkeys.spotlight) { setTool("spotlight"); e.preventDefault(); }
-      if (k === config.hotkeys.undo) { strokesRef.current.pop(); e.preventDefault(); }
-      if (k === config.hotkeys.clear) { strokesRef.current = []; e.preventDefault(); }
-      if (k === "escape") { setActive(false); e.preventDefault(); }
+      if (matchesHotkey(e, config.hotkeys.pen)) { setTool("pen"); e.preventDefault(); }
+      else if (matchesHotkey(e, config.hotkeys.spotlight)) { setTool("spotlight"); e.preventDefault(); }
+      else if (matchesHotkey(e, config.hotkeys.box)) { setTool("box"); e.preventDefault(); }
+      else if (matchesHotkey(e, config.hotkeys.undo)) { strokesRef.current.pop(); e.preventDefault(); }
+      else if (matchesHotkey(e, config.hotkeys.clear)) { strokesRef.current = []; e.preventDefault(); }
+      else if (e.key === "Escape") { setActive(false); e.preventDefault(); }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -1292,69 +1359,65 @@ function PointerOverlay({ config, onExit }) {
         ctx.restore();
       }
 
-      // Draw strokes
-      strokesRef.current = strokesRef.current.filter(s => s.pinned || (now - s.timestamp < fadeMs));
+      // Draw completed strokes
+      const shouldFade = config.fadeEnabled;
+      if (shouldFade) strokesRef.current = strokesRef.current.filter(s => s.pinned || (now - s.timestamp < fadeMs));
+
       strokesRef.current.forEach(stroke => {
-        if (stroke.points.length < 2) return;
         const age = now - stroke.timestamp;
-        const fadeRatio = stroke.pinned ? 1 : Math.max(0, 1 - age / fadeMs);
-        const alpha = fadeRatio;
+        const fadeRatio = (!shouldFade || stroke.pinned) ? 1 : Math.max(0, 1 - age / fadeMs);
 
         ctx.save();
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = fadeRatio;
         ctx.strokeStyle = stroke.color;
         ctx.lineWidth = stroke.width;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
 
-        // Crayon texture: draw main path + offset path
-        ctx.beginPath();
-        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-        for (let i = 1; i < stroke.points.length; i++) {
-          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+        if (stroke.type === "box") {
+          // Box stroke
+          ctx.strokeRect(stroke.x, stroke.y, stroke.w, stroke.h);
+        } else if (stroke.points && stroke.points.length > 1) {
+          // Pen stroke — crayon texture
+          ctx.beginPath();
+          ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+          ctx.stroke();
+          // Texture offset
+          ctx.globalAlpha = fadeRatio * 0.3;
+          ctx.lineWidth = stroke.width * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(stroke.points[0].x + 0.5, stroke.points[0].y + 0.8);
+          for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x + 0.5, stroke.points[i].y + 0.8);
+          ctx.stroke();
+          // Glow
+          ctx.globalAlpha = fadeRatio * 0.15;
+          ctx.lineWidth = stroke.width * 3;
+          ctx.filter = "blur(4px)";
+          ctx.beginPath();
+          ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          for (let i = 1; i < stroke.points.length; i++) ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+          ctx.stroke();
+          ctx.filter = "none";
         }
-        ctx.stroke();
-
-        // Texture offset
-        ctx.globalAlpha = alpha * 0.3;
-        ctx.lineWidth = stroke.width * 0.5;
-        ctx.beginPath();
-        ctx.moveTo(stroke.points[0].x + 0.5, stroke.points[0].y + 0.8);
-        for (let i = 1; i < stroke.points.length; i++) {
-          ctx.lineTo(stroke.points[i].x + 0.5, stroke.points[i].y + 0.8);
-        }
-        ctx.stroke();
-
-        // Glow
-        ctx.globalAlpha = alpha * 0.15;
-        ctx.lineWidth = stroke.width * 3;
-        ctx.filter = "blur(4px)";
-        ctx.beginPath();
-        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-        for (let i = 1; i < stroke.points.length; i++) {
-          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-        }
-        ctx.stroke();
-        ctx.filter = "none";
-
         ctx.restore();
       });
 
-      // Current stroke being drawn
-      if (currentStroke.current && currentStroke.current.points.length > 1) {
+      // Current pen stroke being drawn
+      if (tool === "pen" && currentStroke.current && currentStroke.current.points.length > 1) {
         const s = currentStroke.current;
-        ctx.save();
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = s.width;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.beginPath();
-        ctx.moveTo(s.points[0].x, s.points[0].y);
-        for (let i = 1; i < s.points.length; i++) {
-          ctx.lineTo(s.points[i].x, s.points[i].y);
-        }
-        ctx.stroke();
-        ctx.restore();
+        ctx.save(); ctx.strokeStyle = s.color; ctx.lineWidth = s.width; ctx.lineCap = "round"; ctx.lineJoin = "round";
+        ctx.beginPath(); ctx.moveTo(s.points[0].x, s.points[0].y);
+        for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i].x, s.points[i].y);
+        ctx.stroke(); ctx.restore();
+      }
+
+      // Current box being drawn
+      if (tool === "box" && boxStart.current && drawing) {
+        ctx.save(); ctx.strokeStyle = config.penColor; ctx.lineWidth = config.penWidth; ctx.setLineDash([6,4]);
+        const bx = Math.min(boxStart.current.x, mousePos.x); const by = Math.min(boxStart.current.y, mousePos.y);
+        const bw = Math.abs(mousePos.x - boxStart.current.x); const bh2 = Math.abs(mousePos.y - boxStart.current.y);
+        ctx.strokeRect(bx, by, bw, bh2); ctx.setLineDash([]); ctx.restore();
       }
 
       animRef.current = requestAnimationFrame(render);
@@ -1365,36 +1428,51 @@ function PointerOverlay({ config, onExit }) {
   }, [active, tool, mousePos, config]);
 
   const handleMouseDown = (e) => {
-    if (!active || tool !== "pen") return;
-    setDrawing(true);
-    currentStroke.current = { points: [{ x: e.clientX, y: e.clientY }], color: config.penColor, width: config.penWidth, timestamp: Date.now(), pinned: false };
+    if (!active) return;
+    if (tool === "pen") {
+      setDrawing(true);
+      currentStroke.current = { points: [{ x: e.clientX, y: e.clientY }], color: config.penColor, width: config.penWidth, timestamp: Date.now(), pinned: false };
+    } else if (tool === "box") {
+      setDrawing(true);
+      boxStart.current = { x: e.clientX, y: e.clientY };
+    }
   };
 
   const handleMouseMove = (e) => {
     setMousePos({ x: e.clientX, y: e.clientY });
-    if (drawing && currentStroke.current) {
+    if (drawing && tool === "pen" && currentStroke.current) {
       currentStroke.current.points.push({ x: e.clientX, y: e.clientY });
     }
   };
 
   const handleMouseUp = () => {
-    if (drawing && currentStroke.current && currentStroke.current.points.length > 1) {
+    if (tool === "pen" && drawing && currentStroke.current && currentStroke.current.points.length > 1) {
       strokesRef.current.push({ ...currentStroke.current, timestamp: Date.now() });
+    } else if (tool === "box" && drawing && boxStart.current) {
+      const bx = Math.min(boxStart.current.x, mousePos.x); const by = Math.min(boxStart.current.y, mousePos.y);
+      const bw = Math.abs(mousePos.x - boxStart.current.x); const bh2 = Math.abs(mousePos.y - boxStart.current.y);
+      if (bw > 5 && bh2 > 5) {
+        strokesRef.current.push({ type:"box", x:bx, y:by, w:bw, h:bh2, color:config.penColor, width:config.penWidth, timestamp:Date.now(), pinned:false });
+      }
     }
     currentStroke.current = null;
+    boxStart.current = null;
     setDrawing(false);
   };
 
   const handleDblClick = (e) => {
-    // Pin nearest stroke
     const strokes = strokesRef.current;
     for (let i = strokes.length - 1; i >= 0; i--) {
       const s = strokes[i];
-      for (const p of s.points) {
-        if (Math.abs(p.x - e.clientX) < 20 && Math.abs(p.y - e.clientY) < 20) {
-          strokes[i].pinned = !strokes[i].pinned;
-          forceRender(n => n + 1);
-          return;
+      if (s.type === "box") {
+        if (e.clientX >= s.x && e.clientX <= s.x+s.w && e.clientY >= s.y && e.clientY <= s.y+s.h) {
+          strokes[i].pinned = !strokes[i].pinned; forceRender(n => n + 1); return;
+        }
+      } else if (s.points) {
+        for (const p of s.points) {
+          if (Math.abs(p.x - e.clientX) < 20 && Math.abs(p.y - e.clientY) < 20) {
+            strokes[i].pinned = !strokes[i].pinned; forceRender(n => n + 1); return;
+          }
         }
       }
     }
@@ -1411,11 +1489,11 @@ function PointerOverlay({ config, onExit }) {
         style={{
           position: "fixed", inset: 0, zIndex: 250,
           pointerEvents: active ? "auto" : "none",
-          cursor: active ? (tool === "pen" ? "crosshair" : "none") : "default",
+          cursor: active ? (tool === "pen" ? "crosshair" : tool === "box" ? "crosshair" : "none") : "default",
           width: "100%", height: "100%",
         }}
       />
-      {/* Unified ghost bar — nearly invisible until needed */}
+      {/* Ghost bar */}
       <div
         onMouseEnter={() => setBarHover(true)}
         onMouseLeave={() => setBarHover(false)}
@@ -1425,36 +1503,24 @@ function PointerOverlay({ config, onExit }) {
           transition: "opacity 0.3s",
         }}
       >
-        {/* Exit mark */}
         <div onClick={onExit} title="Return to Omote" style={{
           padding: "8px 10px", cursor: "pointer",
           opacity: active ? 0.9 : barHover ? 0.7 : 0.1,
-          transition: "opacity 0.3s",
-          display: "flex", alignItems: "center",
+          transition: "opacity 0.3s", display: "flex", alignItems: "center",
         }}>
           <SmallMark size={18}/>
         </div>
-
-        {/* Tool tray */}
         <div style={{
           display: "flex", alignItems: "center", gap: 2,
-          padding: "5px 10px",
-          background: "rgba(26,26,26,0.8)",
-          backdropFilter: "blur(8px)",
-          borderRadius: 6,
-          opacity: (active || barHover) ? 1 : 0,
-          pointerEvents: (active || barHover) ? "auto" : "none",
-          transition: "opacity 0.3s",
-          maxHeight: 36,
+          padding: "5px 10px", background: "rgba(26,26,26,0.8)", backdropFilter: "blur(8px)", borderRadius: 6,
+          opacity: (active || barHover) ? 1 : 0, pointerEvents: (active || barHover) ? "auto" : "none",
+          transition: "opacity 0.3s", maxHeight: 36,
         }}>
           <button onClick={() => { setActive(a => !a); }} style={{
             padding: "4px 8px", border: "none", borderRadius: 3,
             background: active ? "rgba(255,255,255,0.1)" : "transparent",
-            color: active ? "#fff" : "rgba(255,255,255,0.7)",
-            ...mono(8), cursor: "pointer", whiteSpace: "nowrap",
-          }}>
-            {active ? "ON" : "OFF"}
-          </button>
+            color: active ? "#fff" : "rgba(255,255,255,0.7)", ...mono(8), cursor: "pointer", whiteSpace: "nowrap",
+          }}>{active ? "ON" : "OFF"}</button>
 
           {active && <>
             <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)", margin: "0 3px" }}/>
@@ -1464,21 +1530,29 @@ function PointerOverlay({ config, onExit }) {
               color: "#fff", ...mono(8), cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
             }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: config.penColor, border: config.penColor === "#FFFFFF" ? "1px solid rgba(255,255,255,0.3)" : "none" }}/>
-              {config.hotkeys.pen.toUpperCase()}
+              {formatHotkey(config.hotkeys.pen)}
+            </button>
+            <button onClick={() => setTool("box")} style={{
+              padding: "4px 8px", border: "none", borderRadius: 3,
+              background: tool === "box" ? "rgba(255,255,255,0.15)" : "transparent",
+              color: "#fff", ...mono(8), cursor: "pointer",
+            }}>
+              <span style={{ width: 8, height: 6, border:"1px solid #fff", display:"inline-block", marginRight:4 }}/>
+              {formatHotkey(config.hotkeys.box)}
             </button>
             <button onClick={() => setTool("spotlight")} style={{
               padding: "4px 8px", border: "none", borderRadius: 3,
               background: tool === "spotlight" ? "rgba(255,255,255,0.15)" : "transparent",
               color: "#fff", ...mono(8), cursor: "pointer",
             }}>
-              {config.hotkeys.spotlight.toUpperCase()}
+              {formatHotkey(config.hotkeys.spotlight)}
             </button>
             <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)", margin: "0 3px" }}/>
             <button onClick={() => { strokesRef.current.pop(); forceRender(n => n + 1); }} style={{ padding: "4px 6px", border: "none", borderRadius: 3, background: "transparent", color: "rgba(255,255,255,0.5)", ...mono(7), cursor: "pointer" }}>
-              {config.hotkeys.undo.toUpperCase()}
+              {formatHotkey(config.hotkeys.undo)}
             </button>
             <button onClick={() => { strokesRef.current = []; forceRender(n => n + 1); }} style={{ padding: "4px 6px", border: "none", borderRadius: 3, background: "transparent", color: "rgba(255,255,255,0.5)", ...mono(7), cursor: "pointer" }}>
-              {config.hotkeys.clear.toUpperCase()}
+              {formatHotkey(config.hotkeys.clear)}
             </button>
           </>}
         </div>
@@ -1702,7 +1776,7 @@ function PersonalSettings({ user, themeMode, setThemeMode }) {
 }
 
 
-function Users({ users, stages, onRefresh, currentUserId, onImpersonate }) {
+function Users({ users, stages, onRefresh, currentUserId, onImpersonate, onUpdateFlags, currentUserRole }) {
   const cl = c(); const [show,setShow]=useState(false); const [nn,setNn]=useState(""); const [ne,setNe]=useState(""); const [np,setNp]=useState(""); const [nr,setNr]=useState("user"); const [err,setErr]=useState(null); const [busy,setBusy]=useState(false);
   const add = async () => {
     if(!ne||!np) return; setBusy(true); setErr(null);
@@ -1746,11 +1820,11 @@ function Users({ users, stages, onRefresh, currentUserId, onImpersonate }) {
           return (
             <div key={u.id} style={{padding:"14px 20px",background:i%2===0?cl.surface:"transparent",border:`1px solid ${isTestUser?`${cl.navy}30`:cl.borderLight}`,borderTop:i===0?undefined:"none"}}>
               <div style={{display:"flex",alignItems:"center"}}>
-                <div style={{width:34,height:34,borderRadius:"50%",background:isTestUser?cl.goldWash:u.role==="admin"?cl.navyWash:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(11),color:isTestUser?cl.gold:u.role==="admin"?cl.navy:cl.ink40,flexShrink:0}}>{isTestUser?"T":(u.name||u.email)[0].toUpperCase()}</div>
+                <div style={{width:34,height:34,borderRadius:"50%",background:isTestUser?cl.goldWash:isAdminRole(u.role)?cl.navyWash:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(11),color:isTestUser?cl.gold:isAdminRole(u.role)?cl.navy:cl.ink40,flexShrink:0}}>{isTestUser?"T":(u.name||u.email)[0].toUpperCase()}</div>
                 <div style={{flex:1,marginLeft:14}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <span style={{...ui(15,500),color:cl.ink}}>{u.name}</span>
-                    <span style={{...mono(8),padding:"1px 6px",background:isTestUser?cl.goldWash:u.role==="admin"?cl.navyWash:cl.bg,color:isTestUser?cl.gold:u.role==="admin"?cl.navy:cl.ink40,border:`1px solid ${cl.borderLight}`}}>{isTestUser?"test":u.role}</span>
+                    <span style={{...mono(8),padding:"1px 6px",background:isTestUser?cl.goldWash:isAdminRole(u.role)?cl.navyWash:cl.bg,color:isTestUser?cl.gold:isAdminRole(u.role)?cl.navy:cl.ink40,border:`1px solid ${cl.borderLight}`}}>{isTestUser?"test":u.role}</span>
                     {isSelf && <span style={{...mono(7),color:cl.ink20}}>You</span>}
                   </div>
                   <div style={{...ui(13,300),color:cl.ink40}}>{u.email}</div>
@@ -1760,11 +1834,28 @@ function Users({ users, stages, onRefresh, currentUserId, onImpersonate }) {
                   {!isSelf && !isTestUser && <button onClick={()=>remove(u.id)} style={{background:"none",border:`1px solid ${cl.borderLight}`,padding:"5px 12px",...mono(8),color:cl.ink40,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.color=cl.akane}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.color=cl.ink40}}>Remove</button>}
                 </div>
               </div>
-              {u.role !== "admin" && (
-                <div style={{marginLeft:48,marginTop:6,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                  {userStages.length > 0 ? userStages.map(s => (
-                    <span key={s.id} style={{display:"inline-flex",alignItems:"center",gap:4,...mono(8),padding:"2px 8px",background:cl.navyWash,color:cl.navy,border:`1px solid ${cl.borderLight}`}}><OIcon name={s.icon||"cube"} size={10} color={cl.navy}/>{s.name}</span>
-                  )) : <span style={{...mono(8),color:cl.ink20}}>No stages assigned</span>}
+              {!isAdminRole(u.role) && (
+                <div style={{marginLeft:48,marginTop:6}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:6}}>
+                    {userStages.length > 0 ? userStages.map(s => (
+                      <span key={s.id} style={{display:"inline-flex",alignItems:"center",gap:4,...mono(8),padding:"2px 8px",background:cl.navyWash,color:cl.navy,border:`1px solid ${cl.borderLight}`}}><OIcon name={s.icon||"cube"} size={10} color={cl.navy}/>{s.name}</span>
+                    )) : <span style={{...mono(8),color:cl.ink20}}>No stages assigned</span>}
+                  </div>
+                  {onUpdateFlags && currentUserRole === "super-admin" && (
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <button onClick={()=>onUpdateFlags(u.id,{ai_builder:!(u.flags?.ai_builder)})} style={{
+                        display:"flex",alignItems:"center",gap:6,padding:"3px 10px",
+                        background:(u.flags?.ai_builder)?cl.navyWash:"transparent",
+                        border:`1px solid ${(u.flags?.ai_builder)?cl.navy:cl.borderLight}`,
+                        ...mono(8),color:(u.flags?.ai_builder)?cl.navy:cl.ink40,cursor:"pointer",transition:"all 0.15s",
+                      }}>
+                        <div style={{width:14,height:8,borderRadius:4,background:(u.flags?.ai_builder)?cl.navy:cl.border,position:"relative",transition:"background 0.2s"}}>
+                          <div style={{width:6,height:6,borderRadius:"50%",background:"#fff",position:"absolute",top:1,left:(u.flags?.ai_builder)?7:1,transition:"left 0.2s"}}/>
+                        </div>
+                        AI Builder
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1810,7 +1901,7 @@ export default function Omote() {
           setUser(profile);
           setScreen("hub");
           loadStages();
-          if (profile.role === "admin") loadUsers();
+          if (isAdminRole(profile.role)) loadUsers();
         } catch { setScreen("login"); }
       } else {
         setScreen("login");
@@ -1835,7 +1926,7 @@ export default function Omote() {
     setShowAbout(true);
     setScreen("hub");
     loadStages();
-    if (profile.role === "admin") loadUsers();
+    if (isAdminRole(profile.role)) loadUsers();
     db.logActivity(profile.id, "login");
   };
 
@@ -1925,6 +2016,15 @@ export default function Omote() {
     } catch(e) { console.error(e); }
   };
 
+  const handleUpdateFlags = async (userId, flagUpdates) => {
+    try {
+      const targetUser = users.find(u => u.id === userId);
+      const newFlags = { ...(targetUser?.flags || {}), ...flagUpdates };
+      await db.updateProfile(userId, { flags: newFlags });
+      setUsers(p => p.map(u => u.id === userId ? { ...u, flags: newFlags } : u));
+    } catch(e) { console.error(e); }
+  };
+
   const handleNav = (id) => {
     if (id === "stages") goHome();
     else if (id === "settings") setScreen("personal-settings");
@@ -1981,13 +2081,13 @@ export default function Omote() {
                 onShare={handleShareStage}
                 onTutorial={startTutorial}/>}
 
-              {screen==="users" && <Users users={users} stages={stages} onRefresh={loadUsers} currentUserId={user?.id} onImpersonate={user?.role==="admin"?setImpersonating:null}/>}
+              {screen==="users" && <Users users={users} stages={stages} onRefresh={loadUsers} currentUserId={user?.id} currentUserRole={user?.role} onImpersonate={isAdminRole(user?.role)?setImpersonating:null} onUpdateFlags={handleUpdateFlags}/>}
               {screen==="personal-settings" && <PersonalSettings user={user} themeMode={themeMode} setThemeMode={setThemeMode}/>}
               {screen==="help" && <HelpPage onTutorial={startTutorial}/>}
               {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerConfig}/>}
               {screen==="storyteller" && <StorytellerSettings stages={visibleStages}/>}
 
-              {screen==="backstage" && activeStage && <Backstage workspace={activeStage} aiEnabled={user?.role==="admin"}
+              {screen==="backstage" && activeStage && <Backstage workspace={activeStage} aiEnabled={user?.role==="super-admin" || !!(user?.flags?.ai_builder)}
                 onUpdate={handleUpdateStage}
                 onPublish={handlePublish}/>}
 

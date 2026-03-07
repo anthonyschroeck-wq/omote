@@ -101,7 +101,7 @@ export async function getStages() {
     cues: (s.cues || []).sort((a, b) => a.sort_order - b.sort_order).map(c => ({
       id: c.id,
       name: c.name,
-      banner: c.banner,
+      banner: (() => { try { const p = JSON.parse(c.banner); return typeof p === 'object' ? p : c.banner; } catch { return c.banner; } })(),
       shellHtml: c.shell_html,
       jsxCode: c.jsx_code,
       method: c.method,
@@ -159,10 +159,15 @@ export async function deleteStage(stageId) {
 // ─── Cues ────────────────────────────────────────────────────
 
 export async function saveCue(stageId, cue, sortOrder) {
+  // Serialize banner — can be string or object
+  let bannerStr = '';
+  if (cue.banner) {
+    bannerStr = typeof cue.banner === 'object' ? JSON.stringify(cue.banner) : cue.banner;
+  }
   const row = {
     stage_id: stageId,
     name: cue.name,
-    banner: cue.banner || '',
+    banner: bannerStr,
     shell_html: cue.shellHtml || '',
     jsx_code: cue.jsxCode || '',
     method: cue.method || null,
