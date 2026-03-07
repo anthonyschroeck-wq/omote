@@ -170,13 +170,16 @@ export async function saveCue(stageId, cue, sortOrder) {
     sort_order: sortOrder || 0,
   };
 
-  if (cue.id && !cue.id.toString().match(/^\d+$/)) {
-    // Existing cue (UUID) — update
+  // UUID format = already saved to Supabase (contains hyphens)
+  const isUUID = cue.id && cue.id.toString().includes('-') && cue.id.length > 20;
+
+  if (isUUID) {
+    // Existing cue — update
     const { error } = await supabase.from('cues').update(row).eq('id', cue.id);
     if (error) throw error;
     return cue.id;
   } else {
-    // New cue — insert
+    // New cue — insert, return the real UUID
     const { data, error } = await supabase.from('cues').insert(row).select().single();
     if (error) throw error;
     return data.id;

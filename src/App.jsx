@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.4 — Demo Stage Designer
+// OMOTE mk6.5 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -240,13 +240,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.4</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.5</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.4</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.5</span>
           </div>
         )}
       </div>
@@ -285,8 +285,8 @@ function buildSystemPrompt(options = {}) {
   if (existingSource) {
     // Editing existing source
     return `You are a UI engineer for Omote, a demo stage designer. You are editing an existing ${isJsx ? "React JSX component" : "HTML document"}.
-RULES: Return ONLY the complete updated ${isJsx ? "JSX source code" : "raw HTML"}. No markdown, no backticks, no explanation.
-${isJsx ? "Return valid JSX with a default export function component. You may use React hooks, Recharts, D3, Lodash, and Tailwind CSS." : "Inline <style>. Modern CSS. Font: -apple-system, sans-serif."}
+RULES: Return ONLY the complete updated ${isJsx ? "JSX source code" : "raw HTML"}. No markdown, no backticks, no explanation. Return the ENTIRE file, not just the changed parts.
+${isJsx ? "Return valid JSX with a default export function component. You may use React hooks, Recharts, D3, Lodash, and Tailwind CSS." : "All navigation/tabs must use onclick handlers with inline JS to show/hide sections. Include working hover states, click handlers, and realistic data. The page must be fully self-contained."}
 
 CURRENT SOURCE:
 ${existingSource}
@@ -297,7 +297,16 @@ Apply the user's requested changes to this source and return the complete update
   // Building from scratch
   return `You are a UI designer for Omote, a demo stage designer. You create interactive product demo interfaces.
 RULES: Return ONLY raw HTML for a complete page. No markdown, no backticks. Inline <style>. Modern CSS. Use {{COMPANY_NAME}} placeholder. Font: -apple-system, sans-serif.
-Build a realistic, interactive product interface. Include tab navigation if multiple views are described. Add hover states, clickable elements, and realistic sample data.
+Build a realistic, fully interactive product interface as a single self-contained HTML page.
+INTERACTIVITY RULES:
+- All navigation tabs/buttons MUST use onclick handlers with inline JavaScript that show/hide content sections
+- Use a pattern like: <div onclick="document.querySelectorAll('.page').forEach(p=>p.style.display='none');document.getElementById('page-X').style.display='block';...">
+- Tab/nav active states must update visually on click (add/remove active classes)
+- All tables should have realistic sample data (10+ rows)
+- Include hover effects via CSS :hover pseudo-classes
+- Dropdowns, filters, and toggles should be functional where possible
+- Use a <script> block at the end for any complex logic
+- The page must work completely standalone with no external dependencies except Google Fonts
 ${brief ? `BRIEF: ${brief}` : ""}
 ${instructions ? `INSTRUCTIONS: ${instructions}` : ""}
 ${columns?.length ? `DATA COLUMNS: ${columns.join(", ")}` : ""}
@@ -915,7 +924,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.4</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.5</div>
       </div>
     </div>
   );
@@ -1776,7 +1785,7 @@ export default function Omote() {
     setUser(null); setScreen("login"); setStages([]); setUsers([]);
   };
 
-  const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setScreen("hub"); loadStages(); };
+  const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setScreen("hub"); };
   const isLoggedIn = screen !== "login" && screen !== "loading";
   const isPerforming = screen === "perform";
   const theme = { mode: themeMode };
@@ -1799,9 +1808,10 @@ export default function Omote() {
   };
 
   const handleUpdateStage = async (updated) => {
+    // Update local state immediately for responsiveness
     setStages(p => p.map(s => s.id === updated.id ? updated : s));
     setActiveStage(updated);
-    // Persist — skip for tutorial (no real ID)
+    // Persist to Supabase
     if (updated.id?.toString().startsWith("tutorial-")) return;
     try {
       await db.updateStage(updated.id, {
@@ -1809,12 +1819,17 @@ export default function Omote() {
         status: updated.status, csvData: updated.csvData, columns: updated.columns,
         csvFilename: updated.csvFilename, set: updated.set,
       });
-      // Sync cues
+      // Sync cues — remap IDs from Supabase
+      const savedCues = [];
       for (let i = 0; i < (updated.cues || []).length; i++) {
         const cue = updated.cues[i];
         const newId = await db.saveCue(updated.id, cue, i);
-        if (cue.id !== newId) updated.cues[i] = { ...cue, id: newId };
+        savedCues.push({ ...cue, id: newId });
       }
+      // Update state with real Supabase IDs
+      const withIds = { ...updated, cues: savedCues };
+      setStages(p => p.map(s => s.id === withIds.id ? withIds : s));
+      setActiveStage(withIds);
     } catch(e) { console.error("Save error", e); }
   };
 
