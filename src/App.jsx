@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk7.3 — Demo Stage Designer
+// OMOTE mk7.4 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -246,13 +246,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.3</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.4</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.3</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.4</span>
           </div>
         )}
       </div>
@@ -790,6 +790,15 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled, isTutorial, onPr
   const [namingFirst, setNamingFirst] = useState(false);
   const [editingCue, setEditingCue] = useState(null);
 
+  const [renaming, setRenaming] = useState(false);
+  const [rn, setRn] = useState(workspace.name);
+  const rnRef = useRef(null);
+  const commitRename = () => {
+    const trimmed = rn.trim();
+    if (trimmed && trimmed !== workspace.name) onUpdate({ ...workspace, name: trimmed });
+    setRenaming(false);
+  };
+
   const updateSet = (s) => { onUpdate({ ...workspace, set:s, csvData, columns, csvFilename:csvFile }); };
   const onSetComplete = () => { setNamingFirst(true); setTab("cues"); };
 
@@ -847,8 +856,15 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled, isTutorial, onPr
   return (
     <div style={{ height:"100%", background:cl.bg, display:"flex", flexDirection:"column" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:52, borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <h2 style={{ ...ds(20), color:cl.ink }}>{workspace.name}</h2>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {renaming ? (
+            <input ref={rnRef} value={rn} onChange={e=>setRn(e.target.value)} onBlur={commitRename} onKeyDown={e=>{if(e.key==="Enter")commitRename();if(e.key==="Escape"){setRn(workspace.name);setRenaming(false)}}} autoFocus style={{ ...ds(20), color:cl.ink, border:"none", borderBottom:`1px solid ${cl.navy}`, background:"transparent", outline:"none", padding:"0 2px", width:Math.max(120,rn.length*12) }}/>
+          ) : (
+            <>
+              <h2 style={{ ...ds(20), color:cl.ink }}>{workspace.name}</h2>
+              <button onClick={()=>{setRn(workspace.name);setRenaming(true)}} title="Rename stage" style={{ padding:4, background:"none", border:"none", cursor:"pointer", opacity:0.4, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity=1} onMouseLeave={e=>e.currentTarget.style.opacity=0.4}><OIcon name="edit" size={14} color={cl.ink60}/></button>
+            </>
+          )}
           <span style={{ ...mono(9), padding:"2px 8px", background:workspace.status==="active"?`${cl.matcha}15`:cl.goldWash, color:workspace.status==="active"?cl.matcha:cl.gold }}>{workspace.status==="active"?"Active":"Draft"}</span>
         </div>
         <button onClick={()=>onPublish({...workspace,status:"active",csvData,columns,csvFilename:csvFile})} disabled={!canPublish} style={{ padding:"9px 22px", background:canPublish?cl.ink:cl.border, color:canPublish?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:canPublish?"pointer":"not-allowed" }}>Publish</button>
@@ -1065,7 +1081,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.3</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.4</div>
       </div>
     </div>
   );
@@ -2197,7 +2213,7 @@ function HelpPage({ onTutorial }) {
         </div>
 
         <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.3</p>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.4</p>
           <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
