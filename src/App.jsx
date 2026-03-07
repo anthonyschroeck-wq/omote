@@ -64,6 +64,9 @@ function OIcon({ name, size=20, color }) {
     x: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={cl} strokeWidth="1.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
     send: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={cl} strokeWidth="1.5" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
     team: <svg width={s} height={s} viewBox={vb} fill="none"><circle cx="24" cy="17" r="6" stroke={cl} strokeWidth="1.4" fill="none"/><path d="M 12 40 C 12 32, 18 28, 24 28 C 30 28, 36 32, 36 40" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round"/><circle cx="12" cy="14" r="4.5" stroke={cl} strokeWidth="1" fill="none" opacity="0.5"/><path d="M 3 36 C 3 30, 7 27, 12 27" stroke={cl} strokeWidth="1" fill="none" opacity="0.5" strokeLinecap="round"/><circle cx="36" cy="14" r="4.5" stroke={cl} strokeWidth="1" fill="none" opacity="0.5"/><path d="M 36 27 C 41 27, 45 30, 45 36" stroke={cl} strokeWidth="1" fill="none" opacity="0.5" strokeLinecap="round"/></svg>,
+    share: <svg width={s} height={s} viewBox={vb} fill="none"><circle cx="36" cy="12" r="5" stroke={cl} strokeWidth="1.4" fill="none"/><circle cx="12" cy="24" r="5" stroke={cl} strokeWidth="1.4" fill="none"/><circle cx="36" cy="36" r="5" stroke={cl} strokeWidth="1.4" fill="none"/><path d="M 17 21.5 L 31 14.5" stroke={cl} strokeWidth="1.2" fill="none" strokeLinecap="round"/><path d="M 17 26.5 L 31 33.5" stroke={cl} strokeWidth="1.2" fill="none" strokeLinecap="round"/></svg>,
+    trash: <svg width={s} height={s} viewBox={vb} fill="none"><path d="M 14 14 L 14 38 L 34 38 L 34 14" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M 10 14 L 38 14" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round"/><path d="M 18 14 L 18 10 L 30 10 L 30 14" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M 20 20 L 20 32 M 24 20 L 24 32 M 28 20 L 28 32" stroke={cl} strokeWidth="1.1" fill="none" strokeLinecap="round" opacity="0.5"/></svg>,
+    logout: <svg width={s} height={s} viewBox={vb} fill="none"><path d="M 18 8 L 10 8 L 10 40 L 18 40" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M 20 24 L 38 24" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round"/><path d="M 32 18 L 38 24 L 32 30" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>,
     // Stage icons (12 options)
     rocket: <svg width={s} height={s} viewBox={vb} fill="none"><path d="M 24 6 C 24 6, 36 10, 36 24 C 36 32, 30 38, 24 42 C 18 38, 12 32, 12 24 C 12 10, 24 6, 24 6 Z" stroke={cl} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/><circle cx="24" cy="22" r="4" stroke={cl} strokeWidth="1.2" fill="none"/><path d="M 12 28 L 6 34 M 36 28 L 42 34" stroke={cl} strokeWidth="1.2" fill="none" strokeLinecap="round"/><path d="M 24.3 6.5 C 24.3 6.5, 35.5 10.5, 35.5 24" stroke={cl} strokeWidth="0.5" fill="none" opacity="0.25" strokeLinecap="round"/></svg>,
     globe: <svg width={s} height={s} viewBox={vb} fill="none"><circle cx="24" cy="24" r="16" stroke={cl} strokeWidth="1.4" fill="none"/><ellipse cx="24" cy="24" rx="8" ry="16" stroke={cl} strokeWidth="1.2" fill="none"/><path d="M 8 24 L 40 24" stroke={cl} strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.6"/><path d="M 11 16 L 37 16 M 11 32 L 37 32" stroke={cl} strokeWidth="0.8" fill="none" strokeLinecap="round" opacity="0.4"/><circle cx="24" cy="24" r="16.3" stroke={cl} strokeWidth="0.5" fill="none" opacity="0.25"/></svg>,
@@ -137,7 +140,7 @@ function IconPicker({ value, onChange, size=28 }) {
   );
 }
 
-function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, activeStageId }) {
+function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, activeStageId, onLogout }) {
   const cl = c();
   const items = [
     { id:"stages", icon:"stages", label:"Stages" },
@@ -215,12 +218,16 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
       <div style={{ padding:expanded?"12px 16px":"12px 10px", borderTop:`1px solid ${cl.borderLight}` }}>
         {expanded ? (
           <div>
-            <div style={{ ...ui(13,500), color:cl.ink, marginBottom:2 }}>{user?.name}</div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:2 }}>
+              <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
+              <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
+            </div>
             <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk5.4</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
+            <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
             <span style={{ ...mono(6), color:cl.ink20 }}>mk5.4</span>
           </div>
         )}
@@ -726,6 +733,8 @@ function Login({ onLogin }) {
 
 // ─── Hub ─────────────────────────────────────────────────────
 
+const TEST_USER = { id:"test-user-000", name:"Test User", email:"test@omote.internal", role:"user" };
+
 function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, users, onShare }) {
   const cl = c();
   const [modal,setModal]=useState(false); const [nn,setNn]=useState(""); const [nd,setNd]=useState(""); const [ni,setNi]=useState("rocket");
@@ -747,11 +756,13 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
                 </div>
                 <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:4 }}>{s.description}</p>
                 {s.cues?.length>0 && <p style={{...mono(8),color:cl.ink20,marginBottom:14}}>{s.cues.length} cue{s.cues.length!==1?"s":""}</p>}
-                <div style={{ display:"flex", gap:8 }}>
+                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                   {s.status==="active"&&s.cues?.some(v=>v.shellHtml||v.jsxCode)?(<button onClick={()=>onSelect(s)} style={{flex:1,padding:"10px 0",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Perform</button>):(<button onClick={()=>onEdit(s)} style={{flex:1,padding:"10px 0",background:cl.ink,color:cl.bg,border:"none",...mono(10),cursor:"pointer"}}>Configure</button>)}
-                  {role==="admin"&&s.status==="active" && <button onClick={()=>onEdit(s)} style={{padding:"10px 16px",background:"none",border:`1px solid ${cl.borderLight}`,...mono(10),color:cl.ink60,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><OIcon name="edit" size={12} color={cl.ink60}/> Edit</button>}
-                  {role==="admin" && <button onClick={()=>setShareModal(s)} style={{padding:"10px 12px",background:"none",border:`1px solid ${cl.borderLight}`,...mono(10),color:cl.ink60,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>Share</button>}
-                  {role==="admin" && <button onClick={(e)=>{e.stopPropagation();if(confirm("Delete stage '"+s.name+"'? This cannot be undone."))onDelete(s.id)}} style={{padding:"10px 12px",background:"none",border:`1px solid ${cl.borderLight}`,...mono(10),color:cl.ink40,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.color=cl.akane}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.color=cl.ink40}}>Delete</button>}
+                  {role==="admin" && <>
+                    {s.status==="active" && <button title="Edit" onClick={()=>onEdit(s)} style={{padding:"8px 10px",background:"none",border:`1px solid ${cl.borderLight}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.navyWash}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="edit" size={15} color={cl.ink60}/></button>}
+                    <button title="Share with users" onClick={()=>setShareModal(s)} style={{padding:"8px 10px",background:"none",border:`1px solid ${cl.borderLight}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.navyWash}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="share" size={15} color={cl.ink60}/></button>
+                    <button title="Delete stage" onClick={(e)=>{e.stopPropagation();if(confirm("Delete stage '"+s.name+"'? This cannot be undone."))onDelete(s.id)}} style={{padding:"8px 10px",background:"none",border:`1px solid ${cl.borderLight}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.akane;e.currentTarget.style.background="rgba(139,77,77,0.04)"}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight;e.currentTarget.style.background="none"}}><OIcon name="trash" size={15} color={cl.ink40}/></button>
+                  </>}
                 </div>
               </div>
             </div>
@@ -763,23 +774,23 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
       {shareModal && (<><div className="fadein" onClick={()=>setShareModal(null)} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)",maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
         <div style={{padding:"24px 28px 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}><OIcon name={shareModal.icon||"cube"} size={20} color={cl.navy}/><h3 style={{...ds(22),color:cl.ink}}>Share Stage</h3></div><p style={{...ui(14,300),color:cl.ink60}}>Select users who can access <strong>{shareModal.name}</strong></p></div>
         <div style={{flex:1,overflow:"auto",padding:"0 28px 24px"}}>
-          {(users||[]).filter(u=>u.role!=="admin").length===0 && <div style={{padding:"20px 0",textAlign:"center",...ui(14,300),color:cl.ink40}}>No users to share with. Invite users first.</div>}
-          {(users||[]).filter(u=>u.role!=="admin").map(u => {
+          {(() => { const shareUsers = [TEST_USER, ...(users||[]).filter(u=>u.role!=="admin")]; return shareUsers.length===0 ? <div style={{padding:"20px 0",textAlign:"center",...ui(14,300),color:cl.ink40}}>No users to share with. Invite users first.</div> : shareUsers.map(u => {
             const assigned = (shareModal.assignedUsers||[]).includes(u.id);
+            const isTest = u.id === TEST_USER.id;
             return (
               <div key={u.id} onClick={()=>{ onShare(shareModal.id, u.id, !assigned); setShareModal({...shareModal, assignedUsers: assigned ? (shareModal.assignedUsers||[]).filter(id=>id!==u.id) : [...(shareModal.assignedUsers||[]), u.id] }); }} style={{
                 display:"flex", alignItems:"center", padding:"12px 14px", cursor:"pointer",
                 border:`1px solid ${assigned?cl.navy:cl.borderLight}`, background:assigned?cl.navyWash:"transparent",
                 marginBottom:6, transition:"all 0.15s",
               }} onMouseEnter={e=>{if(!assigned)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{if(!assigned)e.currentTarget.style.borderColor=cl.borderLight}}>
-                <div style={{width:30,height:30,borderRadius:"50%",background:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(11),color:cl.ink40,flexShrink:0}}>{(u.name||u.email)[0].toUpperCase()}</div>
-                <div style={{flex:1,marginLeft:12}}><div style={{...ui(14,500),color:cl.ink}}>{u.name}</div><div style={{...ui(12,300),color:cl.ink40}}>{u.email}</div></div>
+                <div style={{width:30,height:30,borderRadius:"50%",background:isTest?cl.goldWash:cl.bg,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(11),color:isTest?cl.gold:cl.ink40,flexShrink:0}}>{isTest?"T":(u.name||u.email)[0].toUpperCase()}</div>
+                <div style={{flex:1,marginLeft:12}}><div style={{...ui(14,500),color:cl.ink}}>{u.name}{isTest && <span style={{...mono(7),color:cl.gold,marginLeft:6}}>TEST</span>}</div><div style={{...ui(12,300),color:cl.ink40}}>{u.email}</div></div>
                 <div style={{width:20,height:20,borderRadius:4,border:`2px solid ${assigned?cl.navy:cl.border}`,background:assigned?cl.navy:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   {assigned && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                 </div>
               </div>
             );
-          })}
+          }); })()}
         </div>
         <div style={{padding:"16px 28px",borderTop:`1px solid ${cl.borderLight}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{...mono(8),color:cl.ink20}}>{(shareModal.assignedUsers||[]).length} user{(shareModal.assignedUsers||[]).length!==1?"s":""} assigned</span>
@@ -792,7 +803,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
 
 // ─── Seller Screens ──────────────────────────────────────────
 
-function AudienceSetup({ onNext, stage, companyName, setCompanyName, persona, setPersona }) {
+function AudienceSetup({ onNext, onSkip, stage, companyName, setCompanyName, persona, setPersona }) {
   const cl = c(); const ok = companyName.trim().length>0 && persona;
   return (
     <div style={{ height:"100%", overflow:"auto", background:cl.bg, padding:"48px 40px" }}>
@@ -802,7 +813,10 @@ function AudienceSetup({ onNext, stage, companyName, setCompanyName, persona, se
         <p style={{...ui(16,300),color:cl.ink60,marginBottom:40}}>Set the context for this performance.</p>
         <div style={{marginBottom:32}}><label style={{...mono(10),color:cl.ink40,display:"block",marginBottom:10}}>Company Name</label><input type="text" value={companyName} onChange={e=>setCompanyName(e.target.value)} style={{width:"100%",padding:"14px 16px",border:`1px solid ${cl.border}`,background:cl.surface,...ui(18),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
         <div style={{marginBottom:48}}><label style={{...mono(10),color:cl.ink40,display:"block",marginBottom:10}}>Their Role</label><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{PERSONAS.map(pp=>{const s=persona===pp.id;return(<div key={pp.id} onClick={()=>setPersona(pp.id)} style={{padding:"18px 20px",border:`1px solid ${s?cl.navy:cl.borderLight}`,background:s?cl.navyWash:cl.surface,cursor:"pointer",transition:"all 0.2s"}}><div style={{...ui(16,500),color:s?cl.navy:cl.ink,marginBottom:3}}>{pp.label}</div><div style={{...ui(13,300),color:cl.ink60}}>{pp.focus}</div></div>)})}</div></div>
-        <div style={{display:"flex",justifyContent:"flex-end"}}><button onClick={onNext} disabled={!ok} style={{padding:"14px 32px",background:ok?cl.ink:cl.border,color:ok?cl.bg:cl.ink40,border:"none",...mono(11),cursor:ok?"pointer":"not-allowed"}}>Continue</button></div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <button onClick={onSkip} style={{padding:"14px 24px",background:"none",border:"none",...mono(10),color:cl.ink40,cursor:"pointer"}}>Skip</button>
+          <button onClick={onNext} disabled={!ok} style={{padding:"14px 32px",background:ok?cl.ink:cl.border,color:ok?cl.bg:cl.ink40,border:"none",...mono(11),cursor:ok?"pointer":"not-allowed"}}>Continue</button>
+        </div>
       </div>
     </div>
   );
@@ -1414,7 +1428,6 @@ function PersonalSettings({ user, themeMode, setThemeMode }) {
   );
 }
 
-const TEST_USER = { id:"test-user-000", name:"Test User", email:"test@omote.internal", role:"user" };
 
 function Users({ users, onRefresh, currentUserId, onImpersonate }) {
   const cl = c(); const [show,setShow]=useState(false); const [nn,setNn]=useState(""); const [ne,setNe]=useState(""); const [np,setNp]=useState(""); const [nr,setNr]=useState("user"); const [err,setErr]=useState(null); const [busy,setBusy]=useState(false);
@@ -1653,23 +1666,22 @@ export default function Omote() {
 
           {screen==="login" && <Login onLogin={handleLogin}/>}
 
-          {isLoggedIn && !isPerforming && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={{...user, role:effectiveRole}} stages={visibleStages} activeStageId={activeStage?.id}/>}
+          {isLoggedIn && !isPerforming && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={{...user, role:effectiveRole}} stages={visibleStages} activeStageId={activeStage?.id} onLogout={handleLogout}/>}
 
           {showAbout && <AboutModal onClose={()=>setShowAbout(false)} onTutorial={startTutorial}/>}
 
           {isLoggedIn && !isPerforming && (
             <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column" }}>
-              {/* Top bar — impersonation banner + sign out */}
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:12, padding:"6px 20px", borderBottom:`1px solid ${themeMode==="dark"?DT.borderLight:LT.borderLight}`, background:impersonating?"rgba(139,77,77,0.06)":(themeMode==="dark"?DT.surface:LT.surface) }}>
-                {impersonating && (
+              {/* Top bar — impersonation banner only */}
+              {impersonating && (
+                <div style={{ display:"flex", alignItems:"center", gap:12, padding:"6px 20px", borderBottom:`1px solid ${themeMode==="dark"?DT.borderLight:LT.borderLight}`, background:"rgba(139,77,77,0.06)" }}>
                   <div style={{ flex:1, display:"flex", alignItems:"center", gap:8 }}>
                     <div style={{ width:6, height:6, borderRadius:"50%", background:"#8B4D4D" }}/>
                     <span style={{ ...mono(8), color:"#8B4D4D" }}>Viewing as <strong style={{ ...ui(12,600), textTransform:"none", letterSpacing:0 }}>{impersonating.name}</strong></span>
                     <button onClick={()=>setImpersonating(null)} style={{ padding:"3px 10px", background:"rgba(139,77,77,0.1)", border:"1px solid rgba(139,77,77,0.25)", ...mono(8), color:"#8B4D4D", cursor:"pointer", marginLeft:4 }}>Exit</button>
                   </div>
-                )}
-                <button onClick={handleLogout} style={{ padding:"4px 12px", background:"transparent", border:`1px solid ${themeMode==="dark"?DT.borderLight:LT.borderLight}`, ...mono(8), color:themeMode==="dark"?DT.ink40:LT.ink40, cursor:"pointer" }}>Sign Out</button>
-              </div>
+                </div>
+              )}
 
               {screen==="hub" && <Hub stages={visibleStages} role={effectiveRole}
                 users={users}
@@ -1691,7 +1703,8 @@ export default function Omote() {
                 onPublish={handlePublish}/>}
 
               {screen==="audience" && activeStage && <AudienceSetup stage={activeStage} companyName={companyName} setCompanyName={setCompanyName} persona={persona} setPersona={setPersona}
-                onNext={()=>{db.logActivity(user.id,"perform",{stage:activeStage.name,company:companyName});setScreen("cue-select")}}/>}
+                onNext={()=>{db.logActivity(user.id,"perform",{stage:activeStage.name,company:companyName});setScreen("cue-select")}}
+                onSkip={()=>{if(!companyName.trim())setCompanyName("Acme Corp");setScreen("cue-select")}}/>}
 
               {screen==="cue-select" && activeStage && <CueSelect stage={activeStage} companyName={companyName}
                 onSelect={v=>{setActiveCue(v);setScreen("perform")}}/>}
