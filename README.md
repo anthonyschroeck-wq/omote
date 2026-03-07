@@ -54,3 +54,4 @@ vite.config.js  — Vite configuration
 - **Papaparse** — CSV parsing
 - **Vercel** — Deployment target
 - **Supabase** — Database + Auth (planned)
+# mk6.10
