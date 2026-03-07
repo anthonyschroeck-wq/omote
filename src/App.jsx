@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.0 — Demo Stage Designer
+// OMOTE mk6.1 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -222,13 +222,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.0</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.1</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.0</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.1</span>
           </div>
         )}
       </div>
@@ -260,12 +260,31 @@ async function callClaude(messages, system) {
   }
 }
 
-function buildSystemPrompt(columns, sampleRow) {
-  return `You are a UI designer for Omote. Generate HTML that recreates product interfaces.
-RULES: Return ONLY raw HTML for <body>. No markdown, no backticks. Inline <style>. Modern CSS. Use {{COMPANY_NAME}} placeholder. Font: -apple-system, sans-serif.
-DATA: Columns: ${columns.join(", ")}
-${sampleRow ? `Sample: ${JSON.stringify(sampleRow)}` : ""}
-JS access: window.__DEMO_DATA__ (array), window.__COMPANY_NAME__`;
+function buildSystemPrompt(options = {}) {
+  const { columns, sampleRow, brief, format, existingSource, instructions } = options;
+  const isJsx = format === "jsx";
+
+  if (existingSource) {
+    // Editing existing source
+    return `You are a UI engineer for Omote, a demo stage designer. You are editing an existing ${isJsx ? "React JSX component" : "HTML document"}.
+RULES: Return ONLY the complete updated ${isJsx ? "JSX source code" : "raw HTML"}. No markdown, no backticks, no explanation.
+${isJsx ? "Return valid JSX with a default export function component. You may use React hooks, Recharts, D3, Lodash, and Tailwind CSS." : "Inline <style>. Modern CSS. Font: -apple-system, sans-serif."}
+
+CURRENT SOURCE:
+${existingSource}
+
+Apply the user's requested changes to this source and return the complete updated file.`;
+  }
+
+  // Building from scratch
+  return `You are a UI designer for Omote, a demo stage designer. You create interactive product demo interfaces.
+RULES: Return ONLY raw HTML for a complete page. No markdown, no backticks. Inline <style>. Modern CSS. Use {{COMPANY_NAME}} placeholder. Font: -apple-system, sans-serif.
+Build a realistic, interactive product interface. Include tab navigation if multiple views are described. Add hover states, clickable elements, and realistic sample data.
+${brief ? `BRIEF: ${brief}` : ""}
+${instructions ? `INSTRUCTIONS: ${instructions}` : ""}
+${columns?.length ? `DATA COLUMNS: ${columns.join(", ")}` : ""}
+${sampleRow ? `SAMPLE ROW: ${JSON.stringify(sampleRow)}` : ""}
+JS access: window.__DEMO_DATA__ (array of objects), window.__COMPANY_NAME__ (string)`;
 }
 
 // ─── Import Transform ────────────────────────────────────────
@@ -350,143 +369,232 @@ function AboutModal({ onClose, onTutorial }) {
       <div style={{ textAlign:"center", marginBottom:28 }}><StageMark size={44}/><h2 style={{ ...ds(30), marginTop:12, marginBottom:4 }}>Welcome to Omote</h2><p style={{ ...ui(14,300), color:WARM, fontStyle:"italic" }}>表 — "surface," "front," "the public face"</p></div>
       <div style={{ ...ui(15,300), color:LT.ink80, lineHeight:1.7, marginBottom:24 }}>
         <p style={{ marginBottom:16 }}>Omote is a stage designer for product demonstrations. Build immersive, data-driven demo environments that adapt to your audience — without touching the production product.</p>
-        <div style={{ padding:"14px 18px", background:LT.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}><p style={{ ...ui(13,400), color:LT.gold }}>This is a public alpha prototype with limited functionality. Stages and cues you create will not persist between sessions.</p></div>
-        <p>New here? The <strong>Tutorial Stage</strong> walks you through every step with sample data ready to go.</p>
+        <div style={{ padding:"14px 18px", background:LT.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}><p style={{ ...ui(13,400), color:LT.gold }}>This is a public alpha. Some features are still in development.</p></div>
+        <p>New here? The Tutorial Stage is being redesigned and will be available soon.</p>
       </div>
       <div style={{ display:"flex", gap:10 }}>
-        <button onClick={onClose} style={{ flex:1, padding:"12px 0", background:"none", border:`1px solid ${LT.border}`, ...mono(10), color:LT.ink60, cursor:"pointer" }}>Skip</button>
-        <button onClick={onTutorial} style={{ flex:2, padding:"12px 0", background:DK, color:CREAM, border:"none", ...mono(10), letterSpacing:"0.12em", cursor:"pointer" }}>Start Tutorial</button>
+        <button onClick={onClose} style={{ flex:1, padding:"12px 0", background:DK, color:CREAM, border:"none", ...mono(10), letterSpacing:"0.12em", cursor:"pointer" }}>Get Started</button>
       </div>
     </div>
   </>);
 }
 
+// ─── Stage Builder ───────────────────────────────────────────
 
-// ─── Set Builder ─────────────────────────────────────────────
-
-function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial, aiEnabled }) {
+function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled }) {
   const cl = c();
-  const [mode, setMode] = useState((set.shellHtml||set.jsxCode) ? "edit" : null);
+  const [phase, setPhase] = useState((set.shellHtml||set.jsxCode) ? "canvas" : "choose");
+  const [brief, setBrief] = useState(set.brief || "");
+  const [instructions, setInstructions] = useState(set.instructions || "");
+  const [refImages, setRefImages] = useState(set.refImages || []);
+  const [csvInput, setCsvInput] = useState(null);
+  const [csvCols, setCsvCols] = useState(columns || []);
   const [messages, setMessages] = useState(set.messages || []);
   const [input, setInput] = useState(""); const [img, setImg] = useState(null);
   const [loading, setLoading] = useState(false); const [error, setError] = useState(null);
-  const [editBanner, setEditBanner] = useState(false);
-  const [bannerDraft, setBannerDraft] = useState(set.banner || "");
-  const [tutorialHtmlPicker, setTutorialHtmlPicker] = useState(false);
+  const [editBanner, setEditBanner] = useState(false); const [bannerDraft, setBannerDraft] = useState(set.banner || "");
   const [htmlDrag, setHtmlDrag] = useState(false);
   const [chatWidth, setChatWidth] = useState(420);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
   const chatEnd = useRef(null);
-  const fileRef = useRef(null);
   const jsxFileRef = useRef(null);
+  const csvFileRef = useRef(null);
+  const imgFileRef = useRef(null);
   const sample = Array.isArray(csvData) && csvData.length > 0 ? csvData[0] : null;
+  const hasContent = set.shellHtml || set.jsxCode;
+  const format = set.method === "jsx" ? "jsx" : "html";
 
   useEffect(() => { chatEnd.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
 
   const onPaste = useCallback((e) => {
-    if (!aiEnabled) return;
     const items = e.clipboardData?.items; if (!items) return;
-    for (const item of items) { if (item.type.startsWith("image/")) { e.preventDefault(); const f = item.getAsFile(); if (f) { const r = new FileReader(); r.onload = ev => setImg(ev.target.result); r.readAsDataURL(f); } break; } }
-  }, [aiEnabled]);
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const f = item.getAsFile();
+        if (f) { const r = new FileReader(); r.onload = ev => {
+          if (phase === "describe") setRefImages(p => [...p, ev.target.result]);
+          else setImg(ev.target.result);
+        }; r.readAsDataURL(f); }
+        break;
+      }
+    }
+  }, [phase]);
 
+  // ─── AI Build (initial) ───
+  const buildWithAI = async () => {
+    if (!brief.trim() && refImages.length === 0) return;
+    setLoading(true); setError(null); setPhase("canvas");
+    try {
+      const content = [];
+      refImages.forEach((img, i) => {
+        const [mt, dt] = img.split(",");
+        content.push({ type:"image", source:{ type:"base64", media_type:mt.match(/:(.*?);/)?.[1]||"image/png", data:dt }});
+      });
+      let promptText = brief.trim();
+      if (instructions.trim()) promptText += "\n\nAdditional instructions: " + instructions.trim();
+      if (refImages.length > 0) promptText = `I've uploaded ${refImages.length} reference screenshot${refImages.length>1?"s":""}. ` + promptText;
+      content.push({ type:"text", text: promptText });
+
+      const sysPrompt = buildSystemPrompt({ brief, instructions, columns:csvCols, sampleRow:sample });
+      const res = await callClaude([{ role:"user", content }], sysPrompt);
+      if (res.error) { setError(res.error?.message||res.error); setLoading(false); return; }
+      const txt = res.content?.map(x=>x.text||"").join("")||"";
+      let html = txt.replace(/```html\n?/g,"").replace(/```\n?/g,"").trim();
+      const userMsg = { role:"user", text:promptText, images:refImages };
+      const assistMsg = { role:"assistant", text:"Stage built", html };
+      setMessages([userMsg, assistMsg]);
+      onUpdate({ ...set, shellHtml:html, jsxCode:"", messages:[userMsg, assistMsg], method:"html", brief, instructions, refImages });
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  // ─── AI Edit (canvas) ───
   const send = async () => {
     if (!aiEnabled || (!input.trim() && !img)) return; setError(null);
     const dm = { role:"user", text:input.trim(), image:img };
     const nm = [...messages, dm]; setMessages(nm); setInput(""); setImg(null); setLoading(true);
     try {
-      const apiM = nm.map(m => { if (m.role==="user") { const ct=[]; if (m.image) { const [mt,dt]=m.image.split(","); ct.push({type:"image",source:{type:"base64",media_type:mt.match(/:(.*?);/)?.[1]||"image/png",data:dt}}); } if (m.text) ct.push({type:"text",text:m.text}); return {role:"user",content:ct}; } return {role:"assistant",content:m.text||""}; });
-      const res = await callClaude(apiM, buildSystemPrompt(columns||[], sample));
+      const existingSource = format === "jsx" ? set.jsxCode : set.shellHtml;
+      const apiM = nm.map(m => {
+        if (m.role==="user") {
+          const ct = [];
+          if (m.image) { const [mt,dt]=m.image.split(","); ct.push({type:"image",source:{type:"base64",media_type:mt.match(/:(.*?);/)?.[1]||"image/png",data:dt}}); }
+          if (m.images) m.images.forEach(img2 => { const [mt,dt]=img2.split(","); ct.push({type:"image",source:{type:"base64",media_type:mt.match(/:(.*?);/)?.[1]||"image/png",data:dt}}); });
+          if (m.text) ct.push({type:"text",text:m.text});
+          return {role:"user",content:ct};
+        }
+        return {role:"assistant",content:m.text||""};
+      });
+      const sysPrompt = buildSystemPrompt({ existingSource, format, columns:csvCols, sampleRow:sample, brief:set.brief });
+      const res = await callClaude(apiM, sysPrompt);
       if (res.error) { setError(res.error?.message||res.error); setLoading(false); return; }
       const txt = res.content?.map(x=>x.text||"").join("")||"";
-      let html = txt.replace(/```html\n?/g,"").replace(/```\n?/g,"").trim();
-      const am = { role:"assistant", text:txt, html }; const up = [...nm, am]; setMessages(up);
-      onUpdate({ ...set, shellHtml:html, messages:up, method:"images" });
-      if (!mode) setMode("edit");
+      let code = txt.replace(/```(?:html|jsx|javascript|js)?\n?/g,"").replace(/```\n?/g,"").trim();
+      const am = { role:"assistant", text:"Updated", html:format==="html"?code:undefined }; const up = [...nm, am]; setMessages(up);
+      if (format === "jsx") onUpdate({ ...set, jsxCode:code, shellHtml:"", messages:up });
+      else onUpdate({ ...set, shellHtml:code, jsxCode:"", messages:up });
     } catch(err2) { setError(err2.message); }
     setLoading(false);
   };
 
-  const handleFileUpload = (content, filename) => { let html = content; if (!html.includes("<html") && !html.includes("<!DOCTYPE")) html = `<div>${html}</div>`; onUpdate({ ...set, shellHtml:html, sourceFile:filename, method:"html" }); setMode("edit"); };
-  const handleFileDrop = (files) => { const f = files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => handleFileUpload(ev.target.result, f.name); r.readAsText(f); };
-  const handleJsxFileDrop = (files) => { const f = files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => { onUpdate({ ...set, jsxCode:ev.target.result, shellHtml:"", sourceFile:f.name, method:"jsx" }); setMode("edit"); }; r.readAsText(f); };
+  // ─── JSX Upload ───
+  const handleJsxUpload = (files) => { const f = files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => { onUpdate({ ...set, jsxCode:ev.target.result, shellHtml:"", sourceFile:f.name, method:"jsx" }); setPhase("canvas"); }; r.readAsText(f); };
 
-  const tutorialHtmlOptions = [
-    { label:"HR / Pay Equity", desc:"Employee dashboard with equity scores", html:SAMPLE_HTML_HR },
-    { label:"CRM / Pipeline", desc:"Sales pipeline with deal tracking", html:SAMPLE_HTML_CRM },
-    { label:"Task Manager", desc:"Kanban board with task cards", html:SAMPLE_HTML_TASKS },
-  ];
+  // ─── CSV Upload (optional data) ───
+  const handleCsvUpload = (file) => {
+    Papa.parse(file, { header:true, skipEmptyLines:true, complete:r => { setCsvInput(r.data); setCsvCols(r.meta.fields||[]); }});
+  };
 
-  const hasContent = set.shellHtml || set.jsxCode;
+  // ─── Image Upload ───
+  const handleImageFiles = (files) => {
+    Array.from(files).forEach(f => {
+      if (!f.type.startsWith("image/")) return;
+      const r = new FileReader(); r.onload = ev => setRefImages(p => [...p, ev.target.result]); r.readAsDataURL(f);
+    });
+  };
 
-  // ─── Mode Chooser ───
-  if (!mode && !hasContent) {
+  // ═══ Phase: Choose ═══
+  if (phase === "choose") {
     return (
       <div style={{ padding:"36px 28px", maxWidth:800 }}>
-        <h3 style={{ ...ds(28), color:cl.ink, marginBottom:8 }}>Build Your Set</h3>
-        <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:32 }}>The set is the visual shell your audience sees. How do you want to build it?</p>
-        <div style={{ display:"flex", gap:16, marginBottom:20 }}>
-          <div onClick={()=>{if(aiEnabled)setMode("images")}} style={{ flex:1, padding:"28px 20px", border:`1px solid ${cl.borderLight}`, background:cl.surface, textAlign:"center", opacity:aiEnabled?1:0.4, cursor:aiEnabled?"pointer":"not-allowed", transition:"all 0.2s" }} onMouseEnter={e=>{if(aiEnabled)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight}}>
-            <div style={{ fontSize:28, marginBottom:12, opacity:0.6 }}>📸</div>
-            <div style={{ ...ui(16,500), color:cl.ink, marginBottom:4 }}>Start with Images</div>
-            {!aiEnabled && <div style={{ ...mono(9), color:cl.ink40, marginTop:8 }}>Coming Soon</div>}
-            {aiEnabled && <div style={{ ...ui(13,300), color:cl.ink60 }}>Paste screenshots, describe the layout</div>}
+        <h3 style={{ ...ds(28), color:cl.ink, marginBottom:8 }}>Build Your Stage</h3>
+        <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:32 }}>Choose how to create your demo environment.</p>
+        <div style={{ display:"flex", gap:16 }}>
+          <div onClick={()=>{ if(aiEnabled) setPhase("describe"); }} style={{ flex:1, padding:"32px 24px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:aiEnabled?"pointer":"not-allowed", textAlign:"center", transition:"all 0.2s", opacity:aiEnabled?1:0.4 }} onMouseEnter={e=>{if(aiEnabled)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
+            <OIcon name="stages" size={32} color={cl.navy}/>
+            <div style={{ ...ui(18,500), color:cl.ink, marginTop:12, marginBottom:6 }}>Build with AI</div>
+            <div style={{ ...ui(14,300), color:cl.ink60 }}>Describe your demo, upload reference screenshots, and let AI assemble it</div>
+            {!aiEnabled && <div style={{ ...mono(9), color:cl.ink40, marginTop:10 }}>Admin Only</div>}
           </div>
-          <div onClick={()=>{if(isTutorial)setTutorialHtmlPicker(true);else setMode("html")}} style={{ flex:1, padding:"28px 20px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:"pointer", textAlign:"center", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
-            <div style={{ fontSize:28, marginBottom:12, opacity:0.6 }}>📄</div>
-            <div style={{ ...ui(16,500), color:cl.ink, marginBottom:4 }}>Import HTML</div>
-            <div style={{ ...ui(13,300), color:cl.ink60 }}>Self-contained HTML file</div>
+          <div onClick={()=>setPhase("jsx")} style={{ flex:1, padding:"32px 24px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:"pointer", textAlign:"center", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
+            <div style={{ fontSize:32, opacity:0.5 }}>⚛</div>
+            <div style={{ ...ui(18,500), color:cl.ink, marginTop:12, marginBottom:6 }}>Upload JSX</div>
+            <div style={{ ...ui(14,300), color:cl.ink60 }}>Bring a React component — Omote provides the runtime</div>
           </div>
-          <div onClick={()=>setMode("jsx")} style={{ flex:1, padding:"28px 20px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:"pointer", textAlign:"center", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
-            <div style={{ fontSize:28, marginBottom:12, opacity:0.6 }}>⚛</div>
-            <div style={{ ...ui(16,500), color:cl.ink, marginBottom:4 }}>Import JSX</div>
-            <div style={{ ...ui(13,300), color:cl.ink60 }}>React component — Omote runtime</div>
-          </div>
-        </div>
-        {tutorialHtmlPicker && <div className="fadein" onClick={()=>setTutorialHtmlPicker(false)} style={{ position:"fixed", inset:0, background:"rgba(26,26,26,0.25)", zIndex:200 }}/>}
-        {tutorialHtmlPicker && <div className="fadein" style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:440, background:cl.surface, border:`1px solid ${cl.borderLight}`, zIndex:201, boxShadow:"0 16px 48px rgba(0,0,0,0.12)", padding:28 }}><h3 style={{ ...ds(22), marginBottom:16 }}>Choose a template</h3>{tutorialHtmlOptions.map(opt=><div key={opt.label} onClick={()=>{handleFileUpload(opt.html,opt.label+".html");setTutorialHtmlPicker(false)}} style={{ padding:"14px 18px", border:`1px solid ${cl.borderLight}`, background:cl.bg, marginBottom:8, cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}><div style={{ ...ui(15,500), color:cl.ink }}>{opt.label}</div><div style={{ ...ui(13,300), color:cl.ink60 }}>{opt.desc}</div></div>)}<button onClick={()=>{setTutorialHtmlPicker(false);setMode("html")}} style={{ width:"100%", padding:"10px 0", marginTop:8, background:"none", border:`1px solid ${cl.borderLight}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>Or upload your own file</button></div>}
-      </div>
-    );
-  }
-
-  // ─── Images Mode (AI-enabled) ───
-  if (mode==="images" && !hasContent && aiEnabled) {
-    return (
-      <div style={{ padding:"36px 28px", maxWidth:600 }}>
-        <button onClick={()=>setMode(null)} style={{ background:"none", border:"none", cursor:"pointer", ...mono(10), color:cl.ink60, marginBottom:20 }}>← Back</button>
-        <div onPaste={onPaste} onDragOver={e=>{e.preventDefault();setHtmlDrag(true)}} onDragLeave={()=>setHtmlDrag(false)}
-          onDrop={e=>{e.preventDefault();setHtmlDrag(false);const f=e.dataTransfer?.files?.[0];if(f&&f.type.startsWith("image/")){const r=new FileReader();r.onload=ev=>{setImg(ev.target.result);setInput("Recreate this interface using my data.");setMode("edit")};r.readAsDataURL(f)}}}
-          style={{ padding:"56px 40px", border:`2px dashed ${htmlDrag?cl.navy:cl.border}`, background:htmlDrag?cl.navyWash:"transparent", cursor:"pointer", textAlign:"center", marginBottom:16 }}
-          onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=e=>{const f=e.target.files?.[0];if(f){const r=new FileReader();r.onload=ev=>{setImg(ev.target.result);setInput("Recreate this interface using my data.");setMode("edit")};r.readAsDataURL(f)}};inp.click()}}>
-          <div style={{ fontSize:32, marginBottom:12, opacity:0.5 }}>📸</div>
-          <p style={{ ...mono(11), color:cl.ink60, marginBottom:6 }}>Paste, drop, or click to upload an image</p>
-          <p style={{ ...ui(14,300), color:cl.ink40 }}>Screenshot of the interface you want to recreate</p>
-        </div>
-        <p style={{ ...ui(13,300), color:cl.ink20 }}>Tip: Use Ctrl+V to paste a screenshot from your clipboard</p>
-      </div>
-    );
-  }
-
-  // ─── HTML Upload ───
-  if (mode==="html" && !hasContent) {
-    return (
-      <div style={{ padding:"36px 28px", maxWidth:600 }}>
-        <button onClick={()=>setMode(null)} style={{ background:"none", border:"none", cursor:"pointer", ...mono(10), color:cl.ink60, marginBottom:20 }}>← Back</button>
-        <div onDragOver={e=>{e.preventDefault();setHtmlDrag(true)}} onDragLeave={()=>setHtmlDrag(false)} onDrop={e=>{e.preventDefault();setHtmlDrag(false);handleFileDrop(Array.from(e.dataTransfer?.files||[]))}} onClick={()=>fileRef.current?.click()} style={{ padding:"64px 40px", border:`2px dashed ${htmlDrag?cl.navy:cl.border}`, background:htmlDrag?cl.navyWash:"transparent", cursor:"pointer", textAlign:"center" }}>
-          <input ref={fileRef} type="file" accept=".html,.htm" onChange={e=>{if(e.target.files?.[0])handleFileDrop(Array.from(e.target.files))}} style={{ display:"none" }}/>
-          <OIcon name="upload" size={28} color={cl.ink40}/><p style={{ ...mono(11), color:cl.ink60, marginTop:16, marginBottom:6 }}>Drop HTML file here</p><p style={{ ...ui(14,300), color:cl.ink40 }}>or click to browse</p>
         </div>
       </div>
     );
   }
 
-  // ─── JSX Upload ───
-  if (mode==="jsx" && !hasContent) {
+  // ═══ Phase: Describe (AI brief + images + data) ═══
+  if (phase === "describe") {
+    return (
+      <div style={{ padding:"36px 28px", maxWidth:700 }} onPaste={onPaste}>
+        <button onClick={()=>setPhase("choose")} style={{ background:"none", border:"none", cursor:"pointer", ...mono(10), color:cl.ink60, marginBottom:24 }}>← Back</button>
+        <h3 style={{ ...ds(28), color:cl.ink, marginBottom:6 }}>Describe Your Demo</h3>
+        <p style={{ ...ui(15,300), color:cl.ink60, marginBottom:32 }}>Tell us what you're building, upload reference screenshots, and we'll assemble it.</p>
+
+        {/* Brief */}
+        <div style={{ marginBottom:28 }}>
+          <label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:8 }}>What are you building?</label>
+          <textarea value={brief} onChange={e=>setBrief(e.target.value)} placeholder="e.g. A Revenue Intelligence platform that analyzes sales calls and surfaces deal insights. Key features: deal pipeline with activity timelines, call transcript viewer with sentiment analysis, and a forecasting dashboard." rows={4} style={{ width:"100%", padding:"14px 16px", border:`1px solid ${cl.border}`, background:cl.surface, ...ui(16), color:cl.ink, outline:"none", resize:"vertical", lineHeight:1.6 }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/>
+        </div>
+
+        {/* Reference Images */}
+        <div style={{ marginBottom:28 }}>
+          <label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:8 }}>Reference Screenshots <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>— paste, drop, or click</span></label>
+          <div
+            onDragOver={e=>{e.preventDefault();setHtmlDrag(true)}} onDragLeave={()=>setHtmlDrag(false)}
+            onDrop={e=>{e.preventDefault();setHtmlDrag(false);handleImageFiles(e.dataTransfer?.files)}}
+            onClick={()=>imgFileRef.current?.click()}
+            style={{ padding:refImages.length>0?"16px":"48px 32px", border:`2px dashed ${htmlDrag?cl.navy:cl.border}`, background:htmlDrag?cl.navyWash:"transparent", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
+            <input ref={imgFileRef} type="file" accept="image/*" multiple onChange={e=>handleImageFiles(e.target.files)} style={{ display:"none" }}/>
+            {refImages.length === 0 ? (
+              <div><OIcon name="upload" size={24} color={cl.ink20}/><p style={{ ...mono(10), color:cl.ink40, marginTop:10 }}>Drop images or click to upload</p><p style={{ ...ui(13,300), color:cl.ink20, marginTop:4 }}>Screenshots of the product you're recreating</p></div>
+            ) : (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+                {refImages.map((img, i) => (
+                  <div key={i} style={{ position:"relative" }}>
+                    <img src={img} alt="" style={{ width:120, height:80, objectFit:"cover", borderRadius:4, border:`1px solid ${cl.borderLight}` }}/>
+                    <button onClick={e=>{e.stopPropagation();setRefImages(p=>p.filter((_,j)=>j!==i))}} style={{ position:"absolute", top:-6, right:-6, width:18, height:18, borderRadius:"50%", background:cl.ink, border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}><OIcon name="x" size={10} color="#fff"/></button>
+                  </div>
+                ))}
+                <div style={{ width:120, height:80, border:`1px dashed ${cl.border}`, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:4 }}><OIcon name="plus" size={16} color={cl.ink20}/></div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Optional CSV */}
+        <div style={{ marginBottom:28 }}>
+          <label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:8 }}>Sample Data <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>— optional CSV to use real column names</span></label>
+          {!csvInput ? (
+            <button onClick={()=>csvFileRef.current?.click()} style={{ padding:"10px 20px", background:"none", border:`1px solid ${cl.borderLight}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>
+              <input ref={csvFileRef} type="file" accept=".csv,.tsv" onChange={e=>{if(e.target.files?.[0])handleCsvUpload(e.target.files[0])}} style={{ display:"none" }}/>
+              Upload CSV
+            </button>
+          ) : (
+            <div style={{ padding:"10px 14px", background:cl.surface, border:`1px solid ${cl.borderLight}`, display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{ ...mono(9), color:cl.matcha }}>● {csvCols.length} columns, {csvInput.length} rows</span>
+              <button onClick={()=>{setCsvInput(null);setCsvCols([])}} style={{ background:"none", border:"none", ...mono(8), color:cl.ink40, cursor:"pointer" }}>Remove</button>
+            </div>
+          )}
+        </div>
+
+        {/* Instructions */}
+        <div style={{ marginBottom:32 }}>
+          <label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:8 }}>Additional Instructions <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>— optional</span></label>
+          <textarea value={instructions} onChange={e=>setInstructions(e.target.value)} placeholder="e.g. Use purple/white brand colors. Add clickable nav tabs. Show realistic deal data with 10+ rows." rows={2} style={{ width:"100%", padding:"12px 14px", border:`1px solid ${cl.border}`, background:cl.surface, ...ui(15), color:cl.ink, outline:"none", resize:"vertical", lineHeight:1.5 }}/>
+        </div>
+
+        {error && <div style={{ padding:"10px 14px", marginBottom:16, background:"rgba(139,77,77,0.06)", border:"1px solid rgba(139,77,77,0.15)", ...ui(13), color:cl.akane }}>{error}</div>}
+
+        <button onClick={buildWithAI} disabled={loading||(!brief.trim()&&refImages.length===0)} style={{ padding:"14px 36px", background:(brief.trim()||refImages.length>0)?cl.ink:cl.border, color:(brief.trim()||refImages.length>0)?cl.bg:cl.ink40, border:"none", ...mono(11), cursor:loading?"wait":"pointer" }}>
+          {loading ? "Building Stage..." : "Build with AI"}
+        </button>
+      </div>
+    );
+  }
+
+  // ═══ Phase: JSX Upload ═══
+  if (phase === "jsx" && !hasContent) {
     return (
       <div style={{ padding:"36px 28px", maxWidth:600 }}>
-        <button onClick={()=>setMode(null)} style={{ background:"none", border:"none", cursor:"pointer", ...mono(10), color:cl.ink60, marginBottom:20 }}>← Back</button>
-        <div onDragOver={e=>{e.preventDefault();setHtmlDrag(true)}} onDragLeave={()=>setHtmlDrag(false)} onDrop={e=>{e.preventDefault();setHtmlDrag(false);handleJsxFileDrop(Array.from(e.dataTransfer?.files||[]))}} onClick={()=>jsxFileRef.current?.click()} style={{ padding:"56px 40px", border:`2px dashed ${htmlDrag?cl.navy:cl.border}`, cursor:"pointer", textAlign:"center", marginBottom:20 }}>
-          <input ref={jsxFileRef} type="file" accept=".jsx,.tsx,.js" onChange={e=>{if(e.target.files?.[0])handleJsxFileDrop(Array.from(e.target.files))}} style={{ display:"none" }}/>
+        <button onClick={()=>setPhase("choose")} style={{ background:"none", border:"none", cursor:"pointer", ...mono(10), color:cl.ink60, marginBottom:20 }}>← Back</button>
+        <div onDragOver={e=>{e.preventDefault();setHtmlDrag(true)}} onDragLeave={()=>setHtmlDrag(false)} onDrop={e=>{e.preventDefault();setHtmlDrag(false);handleJsxUpload(Array.from(e.dataTransfer?.files||[]))}} onClick={()=>jsxFileRef.current?.click()} style={{ padding:"56px 40px", border:`2px dashed ${htmlDrag?cl.navy:cl.border}`, cursor:"pointer", textAlign:"center", marginBottom:20 }}>
+          <input ref={jsxFileRef} type="file" accept=".jsx,.tsx,.js" onChange={e=>{if(e.target.files?.[0])handleJsxUpload(Array.from(e.target.files))}} style={{ display:"none" }}/>
           <div style={{ fontSize:32, marginBottom:12, opacity:0.5 }}>⚛</div>
           <p style={{ ...mono(11), color:cl.ink60, marginBottom:6 }}>Drop JSX file here</p>
         </div>
@@ -498,7 +606,7 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial, a
     );
   }
 
-  // ─── Edit Mode (Preview + Canvas) ───
+  // ═══ Phase: Canvas (edit mode) ═══
   return (
     <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
       <div ref={containerRef} style={{ display:"flex", flex:1, overflow:"hidden" }}>
@@ -515,9 +623,9 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial, a
             </div>
           </div>
           <div style={{ flex:1, overflow:"auto", padding:18 }} onPaste={onPaste}>
-            {messages.length===0 && hasContent && <div style={{ textAlign:"center", padding:"24px 16px" }}><div style={{ ...ds(18), color:cl.ink, marginBottom:8 }}>Set built</div><p style={{ ...ui(14,300), color:cl.ink60 }}>{aiEnabled?"Describe changes or paste screenshots to refine.":"Your set is ready."}</p></div>}
-            {messages.length===0 && !hasContent && <div style={{ textAlign:"center", padding:"36px 20px" }}><div style={{ ...ds(20), color:cl.ink, marginBottom:10 }}>Design the set</div><p style={{ ...ui(14,300), color:cl.ink60 }}>{aiEnabled?"Paste a screenshot and describe the layout.":"Upload content to get started."}</p></div>}
-            {messages.map((m,i) => <div key={i} style={{ marginBottom:14, display:"flex", flexDirection:"column", alignItems:m.role==="user"?"flex-end":"flex-start" }}><div style={{ maxWidth:"88%", padding:"10px 14px", borderRadius:m.role==="user"?"12px 12px 2px 12px":"12px 12px 12px 2px", background:m.role==="user"?cl.navy:cl.bg, color:m.role==="user"?"#fff":cl.ink, ...ui(14) }}>{m.image && <img src={m.image} alt="" style={{ maxWidth:"100%", maxHeight:140, borderRadius:6, marginBottom:m.text?8:0, display:"block" }}/>}{m.text && <div style={{ whiteSpace:"pre-wrap" }}>{m.text}</div>}</div></div>)}
+            {messages.length===0 && hasContent && <div style={{ textAlign:"center", padding:"24px 16px" }}><div style={{ ...ds(18), color:cl.ink, marginBottom:8 }}>Stage built</div><p style={{ ...ui(14,300), color:cl.ink60 }}>{aiEnabled?"Describe changes or paste screenshots to refine.":"Your stage is ready."}</p></div>}
+            {messages.length===0 && !hasContent && <div style={{ textAlign:"center", padding:"36px 20px" }}><div style={{ ...ds(20), color:cl.ink, marginBottom:10 }}>Generating...</div></div>}
+            {messages.map((m,i) => <div key={i} style={{ marginBottom:14, display:"flex", flexDirection:"column", alignItems:m.role==="user"?"flex-end":"flex-start" }}><div style={{ maxWidth:"88%", padding:"10px 14px", borderRadius:m.role==="user"?"12px 12px 2px 12px":"12px 12px 12px 2px", background:m.role==="user"?cl.navy:cl.bg, color:m.role==="user"?"#fff":cl.ink, ...ui(14) }}>{m.image && <img src={m.image} alt="" style={{ maxWidth:"100%", maxHeight:140, borderRadius:6, marginBottom:m.text?8:0, display:"block" }}/>}{m.images && m.images.length>0 && <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:m.text?8:0}}>{m.images.map((img2,j)=><img key={j} src={img2} alt="" style={{width:60,height:40,objectFit:"cover",borderRadius:4,opacity:0.8}}/>)}</div>}{m.text && <div style={{ whiteSpace:"pre-wrap" }}>{m.text}</div>}</div></div>)}
             {loading && <div style={{ padding:"10px 14px", borderRadius:"12px 12px 12px 2px", background:cl.bg, ...ui(14,300), color:cl.ink40 }}>Generating...</div>}
             {error && <div style={{ padding:"10px 14px", background:"rgba(139,77,77,0.06)", border:"1px solid rgba(139,77,77,0.15)", borderRadius:8, ...ui(13), color:cl.akane }}>{error}</div>}
             <div ref={chatEnd}/>
@@ -531,10 +639,10 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial, a
           ) : (
             <div style={{ padding:"12px 18px", borderTop:`1px solid ${cl.borderLight}`, position:"relative" }}>
               <div style={{ position:"absolute", inset:0, background:cl.surface, opacity:0.7, zIndex:2 }}/>
-              <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:3 }}><span style={{ ...mono(9), color:cl.ink40 }}>AI Canvas — Coming Soon</span></div>
+              <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:3 }}><span style={{ ...mono(9), color:cl.ink40 }}>AI Canvas — Admin Only</span></div>
               <div style={{ display:"flex", gap:10, alignItems:"flex-end", opacity:0.3, pointerEvents:"none" }}>
-                <textarea disabled placeholder="Describe changes, paste images..." rows={2} style={{ flex:1, padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink40, outline:"none", resize:"none", lineHeight:1.5 }}/>
-                <button disabled style={{ padding:"10px 14px", background:cl.border, color:cl.ink40, border:"none", cursor:"not-allowed", flexShrink:0 }}><OIcon name="send" size={16} color={cl.ink40}/></button>
+                <textarea disabled placeholder="Describe changes..." rows={2} style={{ flex:1, padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink40, outline:"none", resize:"none", lineHeight:1.5 }}/>
+                <button disabled style={{ padding:"10px 14px", background:cl.border, color:cl.ink40, border:"none", flexShrink:0 }}><OIcon name="send" size={16} color={cl.ink40}/></button>
               </div>
             </div>
           )}
@@ -549,7 +657,7 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial, a
             {hasContent && <span style={{ ...mono(8), color:cl.matcha }}>● Live</span>}
           </div>
           <div style={{ flex:1 }}>
-            {hasContent ? <StageFrame content={set.jsxCode||set.shellHtml} contentType={set.jsxCode?"jsx":"html"} data={csvData} company="Acme Corp" banner={set.banner}/> : <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", ...ui(15,300), color:cl.ink40 }}>Upload content to preview your set</div>}
+            {hasContent ? <StageFrame content={set.jsxCode||set.shellHtml} contentType={format} data={csvData||csvInput} company="Acme Corp" banner={set.banner}/> : <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", ...ui(15,300), color:cl.ink40 }}>{loading?"Building your stage...":"Preview will appear here"}</div>}
           </div>
         </div>
       </div>
@@ -559,14 +667,14 @@ function SetBuilder({ set, csvData, columns, onUpdate, onComplete, isTutorial, a
 
 // ─── Backstage ───────────────────────────────────────────────
 
-function Backstage({ workspace, onUpdate, onPublish, isTutorial, aiEnabled }) {
+function Backstage({ workspace, onUpdate, onPublish, aiEnabled }) {
   const cl = c();
   const hasData = Array.isArray(workspace.csvData) && workspace.csvData.length > 0;
   const set = workspace.set || {};
   const hasSet = !!(set.shellHtml || set.jsxCode);
   const cues = workspace.cues || [];
   const canPublish = cues.length > 0;
-  const defaultTab = !workspace.csvData ? "data" : !hasSet ? "set" : "cues";
+  const defaultTab = !hasSet ? "build" : "cues";
   const [tab, setTab] = useState(defaultTab);
   const [csvData, setCsvData] = useState(workspace.csvData||null);
   const [columns, setColumns] = useState(workspace.columns||[]);
@@ -574,12 +682,7 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial, aiEnabled }) {
   const [showNewCue, setShowNewCue] = useState(false);
   const [cn, setCn] = useState(""); const [cb, setCb] = useState("");
   const [namingFirst, setNamingFirst] = useState(false);
-  const [drag, setDrag] = useState(false);
-  const [tutorialCsvPicker, setTutorialCsvPicker] = useState(false);
-  const fileRef = useRef(null);
 
-  const parseCsv = (file) => { setCsvFile(file.name); Papa.parse(file, { header:true, skipEmptyLines:true, complete:r => { setCsvData(r.data); setColumns(r.meta.fields||[]); onUpdate({ ...workspace, csvData:r.data, columns:r.meta.fields, csvFilename:file.name }); setTab("set"); }}); };
-  const parseCsvString = (csvStr, filename) => { const p = Papa.parse(csvStr, { header:true, skipEmptyLines:true }); setCsvData(p.data); setColumns(p.meta.fields||[]); setCsvFile(filename); onUpdate({ ...workspace, csvData:p.data, columns:p.meta.fields, csvFilename:filename }); setTab("set"); };
   const updateSet = (s) => { onUpdate({ ...workspace, set:s, csvData, columns, csvFilename:csvFile }); };
   const onSetComplete = () => { if (cues.length === 0) { setNamingFirst(true); setTab("cues"); } else { setTab("cues"); } };
   const createCue = (name, banner) => {
@@ -592,20 +695,14 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial, aiEnabled }) {
   };
   const deleteCue = (id) => { const list = cues.filter(v=>v.id!==id); onUpdate({ ...workspace, cues:list }); };
 
-  const tutorialCsvOptions = [
-    { label:"HR / People Data", desc:"Employees with salaries, equity scores", csv:SAMPLE_CSV_HR, file:"hr-employees.csv" },
-    { label:"CRM / Sales Pipeline", desc:"Deals with amounts, stages, reps", csv:SAMPLE_CSV_CRM, file:"crm-pipeline.csv" },
-    { label:"Task List", desc:"Tasks with status, priority", csv:SAMPLE_CSV_TASKS, file:"task-list.csv" },
-  ];
-
-  // Set edit mode takes full area
-  if (tab === "set" && hasSet) {
+  // Build tab in full edit mode
+  if (tab === "build" && hasSet) {
     return (
       <div style={{ height:"100%", background:cl.bg, display:"flex", flexDirection:"column" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:52, borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}><h2 style={{ ...ds(20), color:cl.ink }}>{workspace.name}</h2><span style={{ ...mono(9), padding:"2px 8px", background:cl.navyWash, color:cl.navy }}>Set</span><span style={{ ...mono(8), color:cl.matcha }}>● Built</span></div>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}><h2 style={{ ...ds(20), color:cl.ink }}>{workspace.name}</h2><span style={{ ...mono(8), color:cl.matcha }}>● Built</span></div>
         </div>
-        <SetBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} isTutorial={isTutorial} aiEnabled={aiEnabled}/>
+        <StageBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} aiEnabled={aiEnabled}/>
       </div>
     );
   }
@@ -616,67 +713,38 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial, aiEnabled }) {
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <h2 style={{ ...ds(20), color:cl.ink }}>{workspace.name}</h2>
           <span style={{ ...mono(9), padding:"2px 8px", background:workspace.status==="active"?`${cl.matcha}15`:cl.goldWash, color:workspace.status==="active"?cl.matcha:cl.gold }}>{workspace.status==="active"?"Active":"Draft"}</span>
-          {isTutorial && <span style={{ ...mono(8), padding:"2px 8px", background:cl.navyWash, color:cl.navy }}>Tutorial</span>}
         </div>
         <button onClick={()=>onPublish({...workspace,status:"active",csvData,columns,csvFilename:csvFile})} disabled={!canPublish} style={{ padding:"9px 22px", background:canPublish?cl.ink:cl.border, color:canPublish?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:canPublish?"pointer":"not-allowed" }}>Publish</button>
       </div>
       <div style={{ display:"flex", borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface, padding:"0 28px" }}>
-        {[{id:"data",label:"Data",ok:hasData},{id:"set",label:"Set",ok:hasSet},{id:"cues",label:"Cues",ok:cues.length>0},{id:"notes",label:"Notes",ok:cues.some(c=>(c.notes||[]).length>0)}].map(tb => (
+        {[{id:"build",label:"Build",ok:hasSet},{id:"cues",label:"Cues",ok:cues.length>0},{id:"notes",label:"Notes",ok:cues.some(c=>(c.notes||[]).length>0)}].map(tb => (
           <button key={tb.id} onClick={()=>setTab(tb.id)} style={{ padding:"12px 20px", background:"none", border:"none", borderBottom:`2px solid ${tab===tb.id?cl.ink:"transparent"}`, ...ui(15,tab===tb.id?500:300), color:tab===tb.id?cl.ink:cl.ink40, cursor:"pointer", marginBottom:-1, display:"flex", alignItems:"center", gap:8 }}>{tb.label}{tb.ok && <div style={{ width:6, height:6, borderRadius:"50%", background:cl.matcha }}/>}</button>
         ))}
       </div>
       <div style={{ flex:1, overflow:"auto" }}>
-        {tab==="data" && (
-          <div style={{ padding:"36px 28px", maxWidth:800 }}>
-            <h3 style={{ ...ds(28), color:cl.ink, marginBottom:8 }}>Data Model</h3>
-            <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:32 }}>One dataset per stage. Column headers become the schema.</p>
-            {!hasData ? (
-              <div>
-                <div onDragOver={e=>{e.preventDefault();setDrag(true)}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);if(e.dataTransfer?.files?.[0])parseCsv(e.dataTransfer.files[0])}} onClick={()=>{if(isTutorial)setTutorialCsvPicker(true);else fileRef.current?.click()}} style={{ padding:"56px 40px", border:`2px dashed ${drag?cl.navy:cl.border}`, background:drag?cl.navyWash:"transparent", cursor:"pointer", textAlign:"center" }}>
-                  <input ref={fileRef} type="file" accept=".csv,.tsv" onChange={e=>{if(e.target.files?.[0])parseCsv(e.target.files[0])}} style={{ display:"none" }}/>
-                  <OIcon name="upload" size={28} color={cl.ink20}/><p style={{ ...mono(11), color:cl.ink60, marginTop:16, marginBottom:6 }}>Upload CSV</p>
-                  {isTutorial && <p style={{ ...ui(14,300), color:cl.navy, marginTop:8 }}>Click to choose from sample datasets</p>}
-                </div>
-                <button onClick={()=>setTab("set")} style={{ width:"100%", padding:"12px 0", marginTop:14, background:"none", border:`1px solid ${cl.borderLight}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>Skip — my HTML or JSX has its own data</button>
-                {tutorialCsvPicker && <><div className="fadein" onClick={()=>setTutorialCsvPicker(false)} style={{ position:"fixed", inset:0, background:"rgba(26,26,26,0.25)", zIndex:200 }}/><div className="fadein" style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:440, background:cl.surface, border:`1px solid ${cl.borderLight}`, zIndex:201, boxShadow:"0 16px 48px rgba(0,0,0,0.12)", padding:28 }}><h3 style={{ ...ds(22), marginBottom:16 }}>Choose sample data</h3>{tutorialCsvOptions.map(opt=><div key={opt.label} onClick={()=>{parseCsvString(opt.csv,opt.file);setTutorialCsvPicker(false)}} style={{ padding:"14px 18px", border:`1px solid ${cl.borderLight}`, background:cl.bg, marginBottom:8, cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}><div style={{ ...ui(15,500), color:cl.ink }}>{opt.label}</div><div style={{ ...ui(13,300), color:cl.ink60 }}>{opt.desc}</div></div>)}<button onClick={()=>{setTutorialCsvPicker(false);fileRef.current?.click()}} style={{ width:"100%", padding:"10px 0", marginTop:8, background:"none", border:`1px solid ${cl.borderLight}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>Or upload your own file</button></div></>}
-              </div>
-            ) : (
-              <div>
-                <div style={{ display:"flex", gap:24, marginBottom:28, padding:"18px 22px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>
-                  <div><div style={{ ...mono(9), color:cl.ink40, marginBottom:3 }}>File</div><div style={{ ...ui(16,500), color:cl.ink80 }}>{csvFile}</div></div>
-                  <div style={{ width:1, background:cl.borderLight }}/>
-                  <div><div style={{ ...mono(9), color:cl.ink40, marginBottom:3 }}>Columns</div><div style={{ ...ui(16,500), color:cl.ink80 }}>{columns.length}</div></div>
-                  <div style={{ width:1, background:cl.borderLight }}/>
-                  <div><div style={{ ...mono(9), color:cl.ink40, marginBottom:3 }}>Rows</div><div style={{ ...ui(16,500), color:cl.ink80 }}>{csvData.length}</div></div>
-                </div>
-                <div style={{ ...mono(10), color:cl.ink60, marginBottom:10 }}>Schema</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>{columns.map(col=>{const n=csvData[0]?.[col]!=null&&!isNaN(parseFloat(csvData[0][col]));return <span key={col} style={{ ...mono(9), padding:"4px 10px", background:n?`${cl.matcha}10`:cl.surface, border:`1px solid ${n?`${cl.matcha}30`:cl.borderLight}`, color:n?cl.matcha:cl.ink60 }}>{col}</span>})}</div>
-              </div>
-            )}
-          </div>
-        )}
-        {tab==="set" && !hasSet && <SetBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} isTutorial={isTutorial} aiEnabled={aiEnabled}/>}
+        {tab==="build" && !hasSet && <StageBuilder set={set} csvData={csvData} columns={columns} onUpdate={updateSet} onComplete={onSetComplete} aiEnabled={aiEnabled}/>}
+
         {tab==="cues" && (
           <div style={{ padding:"36px 28px", maxWidth:800 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:32 }}>
-              <div><h3 style={{ ...ds(28), color:cl.ink, marginBottom:6 }}>Cues</h3><p style={{ ...ui(15,300), color:cl.ink60 }}>Named versions of your set. Each cue can have its own banner.</p></div>
+              <div><h3 style={{ ...ds(28), color:cl.ink, marginBottom:6 }}>Cues</h3><p style={{ ...ui(15,300), color:cl.ink60 }}>Named versions of your stage. Each cue can have its own banner and notes.</p></div>
               {hasSet && !showNewCue && !namingFirst && <button onClick={()=>setShowNewCue(true)} style={{ padding:"9px 20px", background:cl.ink, color:cl.bg, border:"none", ...mono(10), cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}><OIcon name="plus" size={13} color={cl.bg}/> New Cue</button>}
             </div>
-            {!hasSet && <div style={{ padding:"24px 28px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)" }}><p style={{ ...ui(14,300), color:cl.gold }}>Build a Set first — cues are created from your set design.</p><button onClick={()=>setTab("set")} style={{ marginTop:12, padding:"8px 18px", background:cl.ink, color:cl.bg, border:"none", ...mono(9), cursor:"pointer" }}>Build Set</button></div>}
+            {!hasSet && <div style={{ padding:"24px 28px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)" }}><p style={{ ...ui(14,300), color:cl.gold }}>Build your stage first — cues are created from your stage design.</p><button onClick={()=>setTab("build")} style={{ marginTop:12, padding:"8px 18px", background:cl.ink, color:cl.bg, border:"none", ...mono(9), cursor:"pointer" }}>Build Stage</button></div>}
             {namingFirst && (
               <div className="fadein" style={{ padding:24, background:cl.surface, border:`2px solid ${cl.navy}`, marginBottom:24 }}>
                 <h4 style={{ ...ds(20), color:cl.ink, marginBottom:6 }}>Name your first cue</h4>
-                <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:16 }}>Your set is ready. Give this version a name to create your first performable cue.</p>
-                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Cue Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb)}} placeholder="e.g. Current Product, Q3 Roadmap" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
-                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Banner <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Safe Harbor: Features shown are 6+ months out" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.gold} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
+                <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:16 }}>Your stage is ready. Give this version a name to create your first performable cue.</p>
+                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Cue Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb)}} placeholder="e.g. Default, Current Product, Q3 Roadmap" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
+                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Banner <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Safe Harbor: Features shown are 6+ months out" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
                 <button onClick={()=>createCue(cn,cb)} disabled={!cn.trim()} style={{ padding:"10px 24px", background:cn.trim()?cl.ink:cl.border, color:cn.trim()?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:cn.trim()?"pointer":"not-allowed" }}>Create Cue</button>
               </div>
             )}
             {showNewCue && !namingFirst && (
               <div className="fadein" style={{ padding:24, background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:24 }}>
                 <h4 style={{ ...ds(20), color:cl.ink, marginBottom:16 }}>New Cue</h4>
-                <p style={{ ...ui(13,300), color:cl.ink60, marginBottom:16 }}>Creates a new cue cloned from your current set.</p>
-                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb)}} placeholder="e.g. Long-Term Vision, Safe Harbor Demo" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div>
+                <p style={{ ...ui(13,300), color:cl.ink60, marginBottom:16 }}>Creates a new cue cloned from your current stage.</p>
+                <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Name</label><input type="text" value={cn} onChange={e=>setCn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&cn.trim())createCue(cn,cb)}} placeholder="e.g. Long-Term Vision, Safe Harbor Demo" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
                 <div style={{ marginBottom:14 }}><label style={{ ...mono(9), color:cl.ink40, display:"block", marginBottom:6 }}>Banner <span style={{ ...ui(12,300), textTransform:"none", letterSpacing:0, color:cl.ink20 }}>Optional</span></label><input type="text" value={cb} onChange={e=>setCb(e.target.value)} placeholder="e.g. Safe Harbor: Features shown are 6+ months out" style={{ width:"100%", padding:"10px 12px", border:`1px solid ${cl.border}`, background:cl.bg, ...ui(15), color:cl.ink, outline:"none" }}/></div>
                 <div style={{ display:"flex", gap:8 }}><button onClick={()=>{setShowNewCue(false);setCn("");setCb("")}} style={{ flex:1, padding:"10px 0", background:"none", border:`1px solid ${cl.border}`, ...mono(10), color:cl.ink40, cursor:"pointer" }}>Cancel</button><button onClick={()=>createCue(cn,cb)} disabled={!cn.trim()} style={{ flex:1, padding:"10px 0", background:cn.trim()?cl.ink:cl.border, color:cn.trim()?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:cn.trim()?"pointer":"not-allowed" }}>Create</button></div>
               </div>
@@ -689,6 +757,7 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial, aiEnabled }) {
             ))}
           </div>
         )}
+
         {tab==="notes" && (
           <div style={{ padding:"36px 28px", maxWidth:800 }}>
             <h3 style={{ ...ds(28), color:cl.ink, marginBottom:6 }}>Speaker Notes</h3>
@@ -696,37 +765,14 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial, aiEnabled }) {
             {cues.length === 0 && <div style={{ padding:"24px 28px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)" }}><p style={{ ...ui(14,300), color:cl.gold }}>Create cues first to add speaker notes.</p></div>}
             {cues.map(cue => {
               const notes = cue.notes || [];
-              const addNote = () => {
-                const updated = { ...cue, notes: [...notes, { id: Date.now().toString(), title: "", tip: "" }] };
-                const list = cues.map(c => c.id === cue.id ? updated : c);
-                onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile });
-              };
-              const updateNote = (noteId, field, value) => {
-                const updatedNotes = notes.map(n => n.id === noteId ? { ...n, [field]: value } : n);
-                const updated = { ...cue, notes: updatedNotes };
-                const list = cues.map(c => c.id === cue.id ? updated : c);
-                onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile });
-              };
-              const removeNote = (noteId) => {
-                const updated = { ...cue, notes: notes.filter(n => n.id !== noteId) };
-                const list = cues.map(c => c.id === cue.id ? updated : c);
-                onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile });
-              };
-              const moveNote = (noteId, dir) => {
-                const idx = notes.findIndex(n => n.id === noteId);
-                if ((dir === -1 && idx === 0) || (dir === 1 && idx === notes.length - 1)) return;
-                const arr = [...notes]; const tmp = arr[idx]; arr[idx] = arr[idx + dir]; arr[idx + dir] = tmp;
-                const updated = { ...cue, notes: arr };
-                const list = cues.map(c => c.id === cue.id ? updated : c);
-                onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile });
-              };
+              const addNote = () => { const updated = { ...cue, notes: [...notes, { id: Date.now().toString(), title: "", tip: "" }] }; const list = (workspace.cues||[]).map(c => c.id === cue.id ? updated : c); onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile }); };
+              const updateNote = (noteId, field, value) => { const updatedNotes = notes.map(n => n.id === noteId ? { ...n, [field]: value } : n); const updated = { ...cue, notes: updatedNotes }; const list = (workspace.cues||[]).map(c => c.id === cue.id ? updated : c); onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile }); };
+              const removeNote = (noteId) => { const updated = { ...cue, notes: notes.filter(n => n.id !== noteId) }; const list = (workspace.cues||[]).map(c => c.id === cue.id ? updated : c); onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile }); };
+              const moveNote = (noteId, dir) => { const idx = notes.findIndex(n => n.id === noteId); if ((dir === -1 && idx === 0) || (dir === 1 && idx === notes.length - 1)) return; const arr = [...notes]; const tmp = arr[idx]; arr[idx] = arr[idx + dir]; arr[idx + dir] = tmp; const updated = { ...cue, notes: arr }; const list = (workspace.cues||[]).map(c => c.id === cue.id ? updated : c); onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile }); };
               return (
                 <div key={cue.id} style={{ marginBottom: 28 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ ...ds(20), color: cl.ink }}>{cue.name}</span>
-                      <span style={{ ...mono(8), color: cl.ink20 }}>{notes.length} note{notes.length !== 1 ? "s" : ""}</span>
-                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ ...ds(20), color: cl.ink }}>{cue.name}</span><span style={{ ...mono(8), color: cl.ink20 }}>{notes.length} note{notes.length !== 1 ? "s" : ""}</span></div>
                     <button onClick={addNote} style={{ padding: "6px 14px", background: cl.ink, color: cl.bg, border: "none", ...mono(9), cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><OIcon name="plus" size={12} color={cl.bg}/> Add</button>
                   </div>
                   {notes.length === 0 && <div style={{ padding: "16px 20px", border: `1px dashed ${cl.border}`, textAlign: "center", ...ui(14, 300), color: cl.ink40 }}>No notes yet. Add talking points your audience won't see.</div>}
@@ -787,7 +833,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.0</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.1</div>
       </div>
     </div>
   );
@@ -808,7 +854,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
       <div style={{ maxWidth:800, margin:"0 auto", padding:"48px 40px" }}>
         <div className="breathe" style={{ marginBottom:48 }}><h2 style={{...ds(38),color:cl.ink,marginBottom:8}}>Stages</h2><p style={{...ui(17,300),color:cl.ink60}}>Select a stage to perform, or build a new one.</p></div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-          {!hasTutorial && <div className="breathe" style={{ animationDelay:"0.05s" }}><div onClick={onTutorial} style={{ padding:"24px 28px", border:`2px dashed ${cl.navy}`, background:cl.navyWash, cursor:"pointer" }} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}><div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}><span style={{ fontSize:20 }}>🎓</span><h3 style={{ ...ds(22), color:cl.navy }}>Tutorial Stage</h3></div><p style={{ ...ui(14,300), color:cl.ink60 }}>Learn by doing — guided walkthrough with sample data.</p></div></div>}
+          {!hasTutorial && <div className="breathe" style={{ animationDelay:"0.05s" }}><div style={{ padding:"24px 28px", border:`2px dashed ${cl.border}`, background:"transparent", opacity:0.5, cursor:"not-allowed" }}><div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}><span style={{ fontSize:20 }}>🎓</span><h3 style={{ ...ds(22), color:cl.ink40 }}>Tutorial Stage</h3></div><p style={{ ...ui(14,300), color:cl.ink40 }}>Coming soon — being redesigned.</p></div></div>}
           {stages.map((s,i) => (
             <div key={s.id} className="breathe" style={{ animationDelay:`${0.1+i*0.05}s` }}>
               <div style={{ padding:"24px 28px", border:`1px solid ${cl.borderLight}`, background:cl.surface, transition:"all 0.3s" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.borderLight}}>
@@ -1437,7 +1483,7 @@ function HelpPage({ onTutorial }) {
           <p style={{ ...ui(13,300), color:cl.gold }}>Some features are still in development. Stages persist via Supabase.</p>
         </div>
 
-        <button onClick={onTutorial} style={{ width:"100%", padding:"14px 0", background:cl.ink, color:cl.bg, border:"none", ...mono(10), cursor:"pointer" }}>Start Tutorial Stage</button>
+        <button disabled style={{ width:"100%", padding:"14px 0", background:cl.border, color:cl.ink40, border:"none", ...mono(10), cursor:"not-allowed" }}>Tutorial Stage — Coming Soon</button>
       </div>
     </div>
   );
@@ -1785,7 +1831,7 @@ export default function Omote() {
               {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerConfig}/>}
               {screen==="storyteller" && <StorytellerSettings stages={visibleStages}/>}
 
-              {screen==="backstage" && activeStage && <Backstage workspace={activeStage} isTutorial={activeStage?.isTutorial} aiEnabled={user?.role==="admin"}
+              {screen==="backstage" && activeStage && <Backstage workspace={activeStage} aiEnabled={user?.role==="admin"}
                 onUpdate={handleUpdateStage}
                 onPublish={handlePublish}/>}
 
