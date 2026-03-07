@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk7.0 — Demo Stage Designer
+// OMOTE mk7.1 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -246,13 +246,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.0</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.1</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.0</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.1</span>
           </div>
         )}
       </div>
@@ -1061,7 +1061,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.0</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.1</div>
       </div>
     </div>
   );
@@ -1834,16 +1834,20 @@ function Integrations() {
 // ─── Analytics ───────────────────────────────────────────────
 
 const SAMPLE_SESSIONS = [
-  { id:1, stage:"Revenue Platform", cue:"Current Product", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:1240, date:"2026-03-06T14:30:00", persona:"CRO" },
-  { id:2, stage:"Revenue Platform", cue:"Roadmap", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:680, date:"2026-03-06T15:10:00", persona:"CRO" },
-  { id:3, stage:"Analytics Suite", cue:"Default", account:"Atlas Dynamics", opp:"Platform Renewal", duration:1820, date:"2026-03-05T10:00:00", persona:"VP Ops" },
-  { id:4, stage:"Revenue Platform", cue:"Current Product", account:"Neon Health", opp:"Analytics Add-On", duration:960, date:"2026-03-04T16:00:00", persona:"CAO" },
-  { id:5, stage:"Revenue Platform", cue:"Current Product", account:"Quantum Ridge", opp:"Multi-Year Renewal", duration:2100, date:"2026-03-04T11:00:00", persona:"CFO" },
-  { id:6, stage:"Analytics Suite", cue:"Safe Harbor", account:"Cobalt Systems", opp:"Growth Tier Upgrade", duration:540, date:"2026-03-03T09:30:00", persona:"VP Eng" },
-  { id:7, stage:"Revenue Platform", cue:"Roadmap", account:"Atlas Dynamics", opp:"Platform Renewal", duration:1100, date:"2026-03-02T14:00:00", persona:"VP Ops" },
-  { id:8, stage:"Revenue Platform", cue:"Current Product", account:"Quantum Ridge", opp:"Multi-Year Renewal", duration:1560, date:"2026-03-01T10:30:00", persona:"CRO" },
-  { id:9, stage:"Analytics Suite", cue:"Default", account:"Neon Health", opp:"Analytics Add-On", duration:780, date:"2026-02-28T15:00:00", persona:"CAO" },
-  { id:10, stage:"Revenue Platform", cue:"Roadmap", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:900, date:"2026-02-27T13:00:00", persona:"VP Sales" },
+  { id:1, stage:"Revenue Platform", cue:"Current Product", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:1240, date:"2026-03-06T14:30:00", persona:"CRO", seller:"Tony Schroeck" },
+  { id:2, stage:"Revenue Platform", cue:"Roadmap", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:680, date:"2026-03-06T15:10:00", persona:"CRO", seller:"Tony Schroeck" },
+  { id:3, stage:"Analytics Suite", cue:"Default", account:"Atlas Dynamics", opp:"Platform Renewal", duration:1820, date:"2026-03-05T10:00:00", persona:"VP Ops", seller:"Sarah Chen" },
+  { id:4, stage:"Revenue Platform", cue:"Current Product", account:"Neon Health", opp:"Analytics Add-On", duration:960, date:"2026-03-04T16:00:00", persona:"CAO", seller:"Marcus Rivera" },
+  { id:5, stage:"Revenue Platform", cue:"Current Product", account:"Quantum Ridge", opp:"Multi-Year Renewal", duration:2100, date:"2026-03-04T11:00:00", persona:"CFO", seller:"Tony Schroeck" },
+  { id:6, stage:"Analytics Suite", cue:"Safe Harbor", account:"Cobalt Systems", opp:"Growth Tier Upgrade", duration:540, date:"2026-03-03T09:30:00", persona:"VP Eng", seller:"Priya Patel" },
+  { id:7, stage:"Revenue Platform", cue:"Roadmap", account:"Atlas Dynamics", opp:"Platform Renewal", duration:1100, date:"2026-03-02T14:00:00", persona:"VP Ops", seller:"Sarah Chen" },
+  { id:8, stage:"Revenue Platform", cue:"Current Product", account:"Quantum Ridge", opp:"Multi-Year Renewal", duration:1560, date:"2026-03-01T10:30:00", persona:"CRO", seller:"Tony Schroeck" },
+  { id:9, stage:"Analytics Suite", cue:"Default", account:"Neon Health", opp:"Analytics Add-On", duration:780, date:"2026-02-28T15:00:00", persona:"CAO", seller:"Marcus Rivera" },
+  { id:10, stage:"Revenue Platform", cue:"Roadmap", account:"Meridian Corp", opp:"Enterprise Expansion Q3", duration:900, date:"2026-02-27T13:00:00", persona:"VP Sales", seller:"Sarah Chen" },
+  { id:11, stage:"Revenue Platform", cue:"Current Product", account:"Helios Labs", opp:"New Business", duration:1680, date:"2026-02-26T09:00:00", persona:"CTO", seller:"Priya Patel" },
+  { id:12, stage:"Analytics Suite", cue:"Roadmap", account:"Helios Labs", opp:"New Business", duration:920, date:"2026-02-26T10:00:00", persona:"CTO", seller:"Priya Patel" },
+  { id:13, stage:"Revenue Platform", cue:"Current Product", account:"Cobalt Systems", opp:"Growth Tier Upgrade", duration:1340, date:"2026-02-25T14:00:00", persona:"VP Eng", seller:"Marcus Rivera" },
+  { id:14, stage:"Revenue Platform", cue:"Safe Harbor", account:"Atlas Dynamics", opp:"Platform Renewal", duration:760, date:"2026-02-24T11:00:00", persona:"CEO", seller:"Sarah Chen" },
 ];
 
 const SAMPLE_OUTCOMES = [
@@ -1963,14 +1967,98 @@ function Analytics() {
           })}
         </div>
 
+        {/* Seller Leaderboard */}
+        <div style={{padding:"24px 28px",background:cl.surface,border:`1px solid ${cl.borderLight}`,marginBottom:20}}>
+          <div style={{...mono(9),color:cl.ink40,marginBottom:16}}>Seller Activity</div>
+          {(() => {
+            const bySeller = {};
+            SAMPLE_SESSIONS.forEach(s => {
+              if (!bySeller[s.seller]) bySeller[s.seller] = { name:s.seller, sessions:0, totalDuration:0, accounts:new Set(), cues:{}, lastActive:s.date };
+              bySeller[s.seller].sessions++;
+              bySeller[s.seller].totalDuration += s.duration;
+              bySeller[s.seller].accounts.add(s.account);
+              bySeller[s.seller].cues[s.cue] = (bySeller[s.seller].cues[s.cue]||0)+1;
+              if (s.date > bySeller[s.seller].lastActive) bySeller[s.seller].lastActive = s.date;
+            });
+            const sellers = Object.values(bySeller).sort((a,b) => b.sessions - a.sessions);
+            const maxS = Math.max(...sellers.map(s=>s.sessions));
+            return sellers.map((s,i) => {
+              const topCue = Object.entries(s.cues).sort((a,b)=>b[1]-a[1])[0];
+              const daysAgo = Math.floor((Date.now() - new Date(s.lastActive).getTime())/(1000*60*60*24));
+              return (
+                <div key={s.name} style={{padding:"14px 0",borderBottom:i<sellers.length-1?`1px solid ${cl.borderLight}`:"none"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:14}}>
+                    <div style={{width:36,height:36,borderRadius:"50%",background:cl.navyWash,border:`1px solid ${cl.borderLight}`,display:"flex",alignItems:"center",justifyContent:"center",...mono(12),color:cl.navy,flexShrink:0}}>{s.name.split(" ").map(w=>w[0]).join("")}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{...ui(15,500),color:cl.ink}}>{s.name}</span>
+                          <span style={{...mono(7),color:daysAgo===0?cl.matcha:daysAgo<3?cl.navy:cl.ink20}}>{daysAgo===0?"Active today":daysAgo===1?"Yesterday":`${daysAgo}d ago`}</span>
+                        </div>
+                        <span style={{...mono(9),color:cl.ink60}}>{s.sessions} sessions</span>
+                      </div>
+                      <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:6}}>
+                        <div style={{flex:1,height:6,background:cl.bg,borderRadius:3,overflow:"hidden"}}>
+                          <div style={{width:`${(s.sessions/maxS)*100}%`,height:"100%",background:`linear-gradient(90deg, ${cl.navy}, ${cl.matcha})`,borderRadius:3}}/>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:16}}>
+                        <span style={{...mono(8),color:cl.ink40}}>{s.accounts.size} account{s.accounts.size!==1?"s":""}</span>
+                        <span style={{...mono(8),color:cl.ink40}}>{fmtDuration(s.totalDuration)} total</span>
+                        <span style={{...mono(8),color:cl.ink40}}>avg {fmtDuration(Math.round(s.totalDuration/s.sessions))}</span>
+                        {topCue && <span style={{...mono(8),color:cl.navy}}>Top cue: {topCue[0]}</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+
+        {/* Seller × Persona Heatmap */}
+        <div style={{padding:"24px 28px",background:cl.surface,border:`1px solid ${cl.borderLight}`,marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <div style={{...mono(9),color:cl.ink40}}>Seller × Persona Coverage</div>
+            <span style={{...mono(7),padding:"2px 6px",background:cl.goldWash,color:cl.gold}}>Prototype</span>
+          </div>
+          {(() => {
+            const sellers = [...new Set(SAMPLE_SESSIONS.map(s=>s.seller))];
+            const personas = [...new Set(SAMPLE_SESSIONS.map(s=>s.persona))];
+            const grid = {};
+            SAMPLE_SESSIONS.forEach(s => { const k = s.seller+"||"+s.persona; grid[k] = (grid[k]||0)+1; });
+            const maxV = Math.max(...Object.values(grid));
+            return (
+              <div>
+                <div style={{display:"flex",gap:0}}>
+                  <div style={{width:120}}/>
+                  {personas.map(p => <div key={p} style={{flex:1,textAlign:"center",...mono(8),color:cl.ink40,paddingBottom:8}}>{p}</div>)}
+                </div>
+                {sellers.map(seller => (
+                  <div key={seller} style={{display:"flex",gap:0,marginBottom:4}}>
+                    <div style={{width:120,...ui(12,500),color:cl.ink,display:"flex",alignItems:"center"}}>{seller.split(" ")[0]}</div>
+                    {personas.map(p => {
+                      const v = grid[seller+"||"+p]||0;
+                      const intensity = v > 0 ? 0.15 + (v/maxV)*0.85 : 0;
+                      return <div key={p} style={{flex:1,height:32,margin:2,borderRadius:4,background:v>0?`rgba(90,106,124,${intensity})`:cl.bg,display:"flex",alignItems:"center",justifyContent:"center",...mono(9),color:v>0?"#fff":"transparent"}}>{v>0?v:""}</div>;
+                    })}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          <p style={{...ui(12,300),color:cl.ink20,marginTop:10}}>Darker cells = more sessions. Shows which sellers are covering which persona types.</p>
+        </div>
+
         {/* Recent Sessions */}
         <div style={{padding:"24px 28px",background:cl.surface,border:`1px solid ${cl.borderLight}`}}>
           <div style={{...mono(9),color:cl.ink40,marginBottom:16}}>Recent Sessions</div>
-          {SAMPLE_SESSIONS.slice(0,8).map(s => (
+          {SAMPLE_SESSIONS.slice(0,10).map(s => (
             <div key={s.id} style={{display:"flex",alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${cl.borderLight}`,gap:12}}>
+              <div style={{width:28,height:28,borderRadius:"50%",background:cl.navyWash,display:"flex",alignItems:"center",justifyContent:"center",...mono(9),color:cl.navy,flexShrink:0}}>{s.seller.split(" ").map(w=>w[0]).join("")}</div>
               <div style={{flex:1}}>
                 <div style={{...ui(14,500),color:cl.ink}}>{s.account}</div>
-                <div style={{...ui(12,300),color:cl.ink40}}>{s.opp}</div>
+                <div style={{...ui(12,300),color:cl.ink40}}>{s.opp} · {s.seller}</div>
               </div>
               <div style={{textAlign:"right",marginRight:16}}>
                 <div style={{...mono(9),color:cl.navy}}>{s.stage} → {s.cue}</div>
