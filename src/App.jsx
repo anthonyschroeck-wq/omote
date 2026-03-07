@@ -6,7 +6,7 @@ import { supabase } from "./supabase";
 import * as db from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk6.9 — Demo Stage Designer
+// OMOTE mk6.10 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -240,13 +240,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.9</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk6.10</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.9</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk6.10</span>
           </div>
         )}
       </div>
@@ -982,7 +982,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.9</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk6.10</div>
       </div>
     </div>
   );
@@ -1836,29 +1836,29 @@ function Users({ users, stages, onRefresh, currentUserId, onImpersonate, onUpdat
               </div>
               {!isAdminRole(u.role) && (
                 <div style={{marginLeft:48,marginTop:6}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:6}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                     {userStages.length > 0 ? userStages.map(s => (
                       <span key={s.id} style={{display:"inline-flex",alignItems:"center",gap:4,...mono(8),padding:"2px 8px",background:cl.navyWash,color:cl.navy,border:`1px solid ${cl.borderLight}`}}><OIcon name={s.icon||"cube"} size={10} color={cl.navy}/>{s.name}</span>
                     )) : <span style={{...mono(8),color:cl.ink20}}>No stages assigned</span>}
                   </div>
-                  {onUpdateFlags && (
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <button onClick={()=>{if(currentUserRole==="super-admin")onUpdateFlags(u.id,{ai_builder:!(u.flags?.ai_builder)})}} style={{
-                        display:"flex",alignItems:"center",gap:6,padding:"3px 10px",
-                        background:(u.flags?.ai_builder)?cl.navyWash:"transparent",
-                        border:`1px solid ${(u.flags?.ai_builder)?cl.navy:cl.borderLight}`,
-                        ...mono(8),color:(u.flags?.ai_builder)?cl.navy:cl.ink40,
-                        cursor:currentUserRole==="super-admin"?"pointer":"default",
-                        opacity:currentUserRole==="super-admin"?1:0.7,
-                        transition:"all 0.15s",
-                      }}>
-                        <div style={{width:14,height:8,borderRadius:4,background:(u.flags?.ai_builder)?cl.navy:cl.border,position:"relative",transition:"background 0.2s"}}>
-                          <div style={{width:6,height:6,borderRadius:"50%",background:"#fff",position:"absolute",top:1,left:(u.flags?.ai_builder)?7:1,transition:"left 0.2s"}}/>
-                        </div>
-                        AI Builder
-                      </button>
+                </div>
+              )}
+              {onUpdateFlags && !isSelf && !isTestUser && (
+                <div style={{marginLeft:48,marginTop:6,display:"flex",alignItems:"center",gap:8}}>
+                  <button onClick={()=>{if(currentUserRole==="super-admin")onUpdateFlags(u.id,{ai_builder:!(u.flags?.ai_builder)})}} style={{
+                    display:"flex",alignItems:"center",gap:6,padding:"3px 10px",
+                    background:(u.flags?.ai_builder)?cl.navyWash:"transparent",
+                    border:`1px solid ${(u.flags?.ai_builder)?cl.navy:cl.borderLight}`,
+                    ...mono(8),color:(u.flags?.ai_builder)?cl.navy:cl.ink40,
+                    cursor:currentUserRole==="super-admin"?"pointer":"default",
+                    opacity:currentUserRole==="super-admin"?1:0.7,
+                    transition:"all 0.15s",
+                  }}>
+                    <div style={{width:14,height:8,borderRadius:4,background:(u.flags?.ai_builder)?cl.navy:cl.border,position:"relative",transition:"background 0.2s"}}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:"#fff",position:"absolute",top:1,left:(u.flags?.ai_builder)?7:1,transition:"left 0.2s"}}/>
                     </div>
-                  )}
+                    AI Builder
+                  </button>
                 </div>
               )}
             </div>
