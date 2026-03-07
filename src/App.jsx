@@ -4,7 +4,7 @@ import { transform } from "sucrase";
 import OMOTE_RUNTIME from "../public/omote-runtime.js?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk5.1 — Demo Stage Designer
+// OMOTE mk5.3 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -142,8 +142,8 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
     { id:"help", icon:"help", label:"Help" },
   ];
   if (user?.role === "admin") items.push({ id:"admin", icon:"admin", label:"Admin" });
-  items.push({ id:"pointer", icon:"pointer", label:"Pointer", disabled:true });
-  items.push({ id:"storyteller", icon:"storyteller", label:"Storyteller", disabled:true });
+  items.push({ id:"pointer", icon:"pointer", label:"Pointer" });
+  items.push({ id:"storyteller", icon:"storyteller", label:"Storyteller" });
 
   const [adminOpen, setAdminOpen] = useState(false);
   const w = expanded ? 180 : 52;
@@ -231,12 +231,12 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
         {expanded ? (
           <div>
             <div style={{ ...ui(13,500), color:cl.ink, marginBottom:2 }}>{user?.name}</div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk5.1</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk5.3</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk5.1</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk5.3</span>
           </div>
         )}
       </div>
@@ -531,7 +531,7 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial }) {
   const createCue = (name, banner) => {
     if (!name.trim()) return;
     const s = workspace.set || {};
-    const cue = { id:Date.now().toString(), name:name.trim(), banner:(banner||"").trim(), shellHtml:s.shellHtml||"", jsxCode:s.jsxCode||"", method:s.method };
+    const cue = { id:Date.now().toString(), name:name.trim(), banner:(banner||"").trim(), shellHtml:s.shellHtml||"", jsxCode:s.jsxCode||"", method:s.method, notes:[] };
     const list = [...cues, cue];
     onUpdate({ ...workspace, cues:list, csvData, columns, csvFilename:csvFile });
     setNamingFirst(false); setShowNewCue(false); setCn(""); setCb("");
@@ -567,7 +567,7 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial }) {
         <button onClick={()=>onPublish({...workspace,status:"active",csvData,columns,csvFilename:csvFile})} disabled={!canPublish} style={{ padding:"9px 22px", background:canPublish?cl.ink:cl.border, color:canPublish?cl.bg:cl.ink40, border:"none", ...mono(10), cursor:canPublish?"pointer":"not-allowed" }}>Publish</button>
       </div>
       <div style={{ display:"flex", borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface, padding:"0 28px" }}>
-        {[{id:"data",label:"Data",ok:hasData},{id:"set",label:"Set",ok:hasSet},{id:"cues",label:"Cues",ok:cues.length>0}].map(tb => (
+        {[{id:"data",label:"Data",ok:hasData},{id:"set",label:"Set",ok:hasSet},{id:"cues",label:"Cues",ok:cues.length>0},{id:"notes",label:"Notes",ok:cues.some(c=>(c.notes||[]).length>0)}].map(tb => (
           <button key={tb.id} onClick={()=>setTab(tb.id)} style={{ padding:"12px 20px", background:"none", border:"none", borderBottom:`2px solid ${tab===tb.id?cl.ink:"transparent"}`, ...ui(15,tab===tb.id?500:300), color:tab===tb.id?cl.ink:cl.ink40, cursor:"pointer", marginBottom:-1, display:"flex", alignItems:"center", gap:8 }}>{tb.label}{tb.ok && <div style={{ width:6, height:6, borderRadius:"50%", background:cl.matcha }}/>}</button>
         ))}
       </div>
@@ -635,6 +635,66 @@ function Backstage({ workspace, onUpdate, onPublish, isTutorial }) {
             ))}
           </div>
         )}
+        {tab==="notes" && (
+          <div style={{ padding:"36px 28px", maxWidth:800 }}>
+            <h3 style={{ ...ds(28), color:cl.ink, marginBottom:6 }}>Speaker Notes</h3>
+            <p style={{ ...ui(15,300), color:cl.ink60, marginBottom:32 }}>Talking points for each cue. Visible only to you via the Omote Companion extension during Perform.</p>
+            {cues.length === 0 && <div style={{ padding:"24px 28px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)" }}><p style={{ ...ui(14,300), color:cl.gold }}>Create cues first to add speaker notes.</p></div>}
+            {cues.map(cue => {
+              const notes = cue.notes || [];
+              const addNote = () => {
+                const updated = { ...cue, notes: [...notes, { id: Date.now().toString(), title: "", tip: "" }] };
+                const list = cues.map(c => c.id === cue.id ? updated : c);
+                onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile });
+              };
+              const updateNote = (noteId, field, value) => {
+                const updatedNotes = notes.map(n => n.id === noteId ? { ...n, [field]: value } : n);
+                const updated = { ...cue, notes: updatedNotes };
+                const list = cues.map(c => c.id === cue.id ? updated : c);
+                onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile });
+              };
+              const removeNote = (noteId) => {
+                const updated = { ...cue, notes: notes.filter(n => n.id !== noteId) };
+                const list = cues.map(c => c.id === cue.id ? updated : c);
+                onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile });
+              };
+              const moveNote = (noteId, dir) => {
+                const idx = notes.findIndex(n => n.id === noteId);
+                if ((dir === -1 && idx === 0) || (dir === 1 && idx === notes.length - 1)) return;
+                const arr = [...notes]; const tmp = arr[idx]; arr[idx] = arr[idx + dir]; arr[idx + dir] = tmp;
+                const updated = { ...cue, notes: arr };
+                const list = cues.map(c => c.id === cue.id ? updated : c);
+                onUpdate({ ...workspace, cues: list, csvData, columns, csvFilename: csvFile });
+              };
+              return (
+                <div key={cue.id} style={{ marginBottom: 28 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ ...ds(20), color: cl.ink }}>{cue.name}</span>
+                      <span style={{ ...mono(8), color: cl.ink20 }}>{notes.length} note{notes.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    <button onClick={addNote} style={{ padding: "6px 14px", background: cl.ink, color: cl.bg, border: "none", ...mono(9), cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><OIcon name="plus" size={12} color={cl.bg}/> Add</button>
+                  </div>
+                  {notes.length === 0 && <div style={{ padding: "16px 20px", border: `1px dashed ${cl.border}`, textAlign: "center", ...ui(14, 300), color: cl.ink40 }}>No notes yet. Add talking points your audience won't see.</div>}
+                  {notes.map((note, ni) => (
+                    <div key={note.id} style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 8 }}>
+                        <button onClick={() => moveNote(note.id, -1)} disabled={ni === 0} style={{ background: "none", border: "none", cursor: ni === 0 ? "default" : "pointer", opacity: ni === 0 ? 0.2 : 0.5, fontSize: 10, lineHeight: 1, padding: 2 }}>▲</button>
+                        <span style={{ ...mono(9), color: cl.ink20, textAlign: "center" }}>{ni + 1}</span>
+                        <button onClick={() => moveNote(note.id, 1)} disabled={ni === notes.length - 1} style={{ background: "none", border: "none", cursor: ni === notes.length - 1 ? "default" : "pointer", opacity: ni === notes.length - 1 ? 0.2 : 0.5, fontSize: 10, lineHeight: 1, padding: 2 }}>▼</button>
+                      </div>
+                      <div style={{ flex: 1, padding: "10px 14px", background: cl.surface, border: `1px solid ${cl.borderLight}` }}>
+                        <input type="text" value={note.title} onChange={e => updateNote(note.id, "title", e.target.value)} placeholder="Section or topic" style={{ width: "100%", padding: "4px 0", border: "none", background: "transparent", ...ui(14, 500), color: cl.ink, outline: "none", marginBottom: 6 }}/>
+                        <textarea value={note.tip} onChange={e => updateNote(note.id, "tip", e.target.value)} placeholder="Your zinger — customer story, value stat, or key talking point" rows={2} style={{ width: "100%", padding: "4px 0", border: "none", background: "transparent", ...ui(14, 300), color: cl.ink80, outline: "none", resize: "vertical", lineHeight: 1.5 }}/>
+                      </div>
+                      <button onClick={() => removeNote(note.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 4px", opacity: 0.3 }} onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = "0.3"}><OIcon name="x" size={14} color={cl.akane}/></button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -660,7 +720,7 @@ function Login({ onLogin, users }) {
         <button onClick={go} disabled={ld||!u||!p} style={{width:"100%",padding:"13px 0",background:(u&&p)?DK:"#CCC6BA",color:(u&&p)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(u&&p)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
         <button onClick={()=>{setLd(true);setTimeout(()=>onLogin(users[0]),300)}} style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #CCC6BA",...mono(10),color:WARM,cursor:"pointer"}}>Quick Enter</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk5.1</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk5.3</div>
       </div>
     </div>
   );
@@ -736,12 +796,477 @@ function CueSelect({ stage, companyName, onSelect }) {
   );
 }
 
-function Performance({ stage, cue, companyName, onExit }) {
-  const [hover,setHover]=useState(false);
+// ─── Pointer Settings ────────────────────────────────────────
+
+const DEFAULT_POINTER = {
+  penColor: "#C4A855",
+  penWidth: 3,
+  spotlightRadius: 120,
+  fadeSeconds: 4,
+  hotkeys: { toggle: "p", pen: "d", spotlight: "s", undo: "z", clear: "c" },
+};
+
+const PEN_COLORS = [
+  { label:"Gold", hex:"#C4A855" },
+  { label:"Navy", hex:"#5A6A7C" },
+  { label:"Coral", hex:"#C47070" },
+  { label:"Matcha", hex:"#4A6A48" },
+  { label:"Ink", hex:"#1A1A1A" },
+  { label:"White", hex:"#FFFFFF" },
+];
+
+function PointerSettings({ config, onChange }) {
+  const cl = c();
+  const update = (k, v) => onChange({ ...config, [k]: v });
+  const updateHotkey = (k, v) => onChange({ ...config, hotkeys: { ...config.hotkeys, [k]: v } });
+
+  return (
+    <div style={{ height:"100%", overflow:"auto", background:cl.bg, padding:"48px 40px" }}>
+      <div style={{ maxWidth:500, margin:"0 auto" }}>
+        <h2 style={{ ...ds(32), color:cl.ink, marginBottom:8 }}>Pointer</h2>
+        <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:40 }}>Annotate and spotlight during live performances. Activate with <kbd style={{ ...mono(10), padding:"2px 6px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>{config.hotkeys.toggle.toUpperCase()}</kbd> during Perform.</p>
+
+        {/* Pen Color */}
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Pen Color</div>
+          <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+            {PEN_COLORS.map(pc => (
+              <div key={pc.hex} onClick={() => update("penColor", pc.hex)} style={{
+                width:36, height:36, borderRadius:"50%", background:pc.hex,
+                border:`2px solid ${config.penColor === pc.hex ? cl.ink : cl.borderLight}`,
+                cursor:"pointer", transition:"all 0.15s",
+                boxShadow: config.penColor === pc.hex ? `0 0 0 3px ${cl.navyWash}` : "none",
+                ...(pc.hex === "#FFFFFF" ? { border:`2px solid ${config.penColor === pc.hex ? cl.ink : cl.border}` } : {}),
+              }} title={pc.label}/>
+            ))}
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginLeft:8 }}>
+              <input type="color" value={config.penColor} onChange={e => update("penColor", e.target.value)} style={{ width:36, height:36, border:"none", padding:0, cursor:"pointer", background:"none" }}/>
+              <span style={{ ...ui(12,300), color:cl.ink40 }}>Custom</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Pen Width */}
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Pen Width</div>
+          <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+            <input type="range" min="1" max="12" step="1" value={config.penWidth} onChange={e => update("penWidth", parseInt(e.target.value))} style={{ flex:1, accentColor:cl.navy }}/>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:48 }}>
+              <div style={{ width:config.penWidth * 3, height:config.penWidth * 3, borderRadius:"50%", background:config.penColor, border:config.penColor==="#FFFFFF"?`1px solid ${cl.border}`:"none" }}/>
+            </div>
+            <span style={{ ...mono(10), color:cl.ink60, width:24, textAlign:"right" }}>{config.penWidth}</span>
+          </div>
+        </div>
+
+        {/* Spotlight */}
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Spotlight Radius</div>
+          <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+            <input type="range" min="60" max="300" step="10" value={config.spotlightRadius} onChange={e => update("spotlightRadius", parseInt(e.target.value))} style={{ flex:1, accentColor:cl.navy }}/>
+            <span style={{ ...mono(10), color:cl.ink60 }}>{config.spotlightRadius}px</span>
+          </div>
+        </div>
+
+        {/* Fade */}
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Auto-fade</div>
+          <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+            <input type="range" min="1" max="15" step="1" value={config.fadeSeconds} onChange={e => update("fadeSeconds", parseInt(e.target.value))} style={{ flex:1, accentColor:cl.navy }}/>
+            <span style={{ ...mono(10), color:cl.ink60 }}>{config.fadeSeconds}s</span>
+          </div>
+          <p style={{ ...ui(12,300), color:cl.ink20, marginTop:8 }}>Strokes dissolve after this duration. Double-click a stroke to pin it.</p>
+        </div>
+
+        {/* Hotkeys */}
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:16 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Hotkeys</div>
+          {[
+            { key:"toggle", label:"Toggle Pointer" },
+            { key:"pen", label:"Pen Tool" },
+            { key:"spotlight", label:"Spotlight" },
+            { key:"undo", label:"Undo" },
+            { key:"clear", label:"Clear All" },
+          ].map(hk => (
+            <div key={hk.key} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${cl.borderLight}` }}>
+              <span style={{ ...ui(14,400), color:cl.ink80 }}>{hk.label}</span>
+              <input type="text" value={config.hotkeys[hk.key].toUpperCase()} maxLength={1}
+                onChange={e => { const v = e.target.value.toLowerCase(); if (v.length === 1 && /[a-z]/.test(v)) updateHotkey(hk.key, v); }}
+                style={{ width:40, textAlign:"center", padding:"6px 0", border:`1px solid ${cl.border}`, background:cl.bg, ...mono(12), color:cl.ink, outline:"none" }}
+                onFocus={e => e.target.style.borderColor = cl.navy} onBlur={e => e.target.style.borderColor = cl.border}/>
+            </div>
+          ))}
+        </div>
+
+        {/* Preview hint */}
+        <div style={{ padding:"18px 24px", background:cl.navyWash, border:`1px solid ${cl.borderLight}` }}>
+          <p style={{ ...ui(14,300), color:cl.navy }}>During Perform, press <kbd style={{ ...mono(10), padding:"1px 5px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>{config.hotkeys.toggle.toUpperCase()}</kbd> to activate the pointer toolbar. A floating bar will appear with pen and spotlight tools.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pointer Overlay (Performance mode) ──────────────────────
+
+function PointerOverlay({ config, onExit }) {
+  const canvasRef = useRef(null);
+  const [active, setActive] = useState(false);
+  const [tool, setTool] = useState("pen"); // "pen" | "spotlight"
+  const [drawing, setDrawing] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const strokesRef = useRef([]);
+  const currentStroke = useRef(null);
+  const animRef = useRef(null);
+  const [, forceRender] = useState(0);
+  const [barHover, setBarHover] = useState(false);
+
+  // Resize canvas
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const resize = () => { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; };
+    resize(); window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  // Hotkey handler
+  useEffect(() => {
+    const handleKey = (e) => {
+      const k = e.key.toLowerCase();
+      if (k === config.hotkeys.toggle) { setActive(a => !a); e.preventDefault(); }
+      if (!active) return;
+      if (k === config.hotkeys.pen) { setTool("pen"); e.preventDefault(); }
+      if (k === config.hotkeys.spotlight) { setTool("spotlight"); e.preventDefault(); }
+      if (k === config.hotkeys.undo) { strokesRef.current.pop(); e.preventDefault(); }
+      if (k === config.hotkeys.clear) { strokesRef.current = []; e.preventDefault(); }
+      if (k === "escape") { setActive(false); e.preventDefault(); }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [active, config.hotkeys]);
+
+  // Animation loop
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+
+    const render = () => {
+      const w = window.innerWidth; const h = window.innerHeight;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      if (!active) { animRef.current = requestAnimationFrame(render); return; }
+
+      const now = Date.now();
+      const fadeMs = config.fadeSeconds * 1000;
+
+      // Draw spotlight
+      if (tool === "spotlight") {
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(0, 0, w, h);
+        ctx.save();
+        ctx.globalCompositeOperation = "destination-out";
+        const grad = ctx.createRadialGradient(mousePos.x, mousePos.y, 0, mousePos.x, mousePos.y, config.spotlightRadius);
+        grad.addColorStop(0, "rgba(0,0,0,1)");
+        grad.addColorStop(0.7, "rgba(0,0,0,0.8)");
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(mousePos.x, mousePos.y, config.spotlightRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Draw strokes
+      strokesRef.current = strokesRef.current.filter(s => s.pinned || (now - s.timestamp < fadeMs));
+      strokesRef.current.forEach(stroke => {
+        if (stroke.points.length < 2) return;
+        const age = now - stroke.timestamp;
+        const fadeRatio = stroke.pinned ? 1 : Math.max(0, 1 - age / fadeMs);
+        const alpha = fadeRatio;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        // Crayon texture: draw main path + offset path
+        ctx.beginPath();
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+        }
+        ctx.stroke();
+
+        // Texture offset
+        ctx.globalAlpha = alpha * 0.3;
+        ctx.lineWidth = stroke.width * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(stroke.points[0].x + 0.5, stroke.points[0].y + 0.8);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i].x + 0.5, stroke.points[i].y + 0.8);
+        }
+        ctx.stroke();
+
+        // Glow
+        ctx.globalAlpha = alpha * 0.15;
+        ctx.lineWidth = stroke.width * 3;
+        ctx.filter = "blur(4px)";
+        ctx.beginPath();
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+        }
+        ctx.stroke();
+        ctx.filter = "none";
+
+        ctx.restore();
+      });
+
+      // Current stroke being drawn
+      if (currentStroke.current && currentStroke.current.points.length > 1) {
+        const s = currentStroke.current;
+        ctx.save();
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = s.width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(s.points[0].x, s.points[0].y);
+        for (let i = 1; i < s.points.length; i++) {
+          ctx.lineTo(s.points[i].x, s.points[i].y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      animRef.current = requestAnimationFrame(render);
+    };
+
+    animRef.current = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [active, tool, mousePos, config]);
+
+  const handleMouseDown = (e) => {
+    if (!active || tool !== "pen") return;
+    setDrawing(true);
+    currentStroke.current = { points: [{ x: e.clientX, y: e.clientY }], color: config.penColor, width: config.penWidth, timestamp: Date.now(), pinned: false };
+  };
+
+  const handleMouseMove = (e) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+    if (drawing && currentStroke.current) {
+      currentStroke.current.points.push({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (drawing && currentStroke.current && currentStroke.current.points.length > 1) {
+      strokesRef.current.push({ ...currentStroke.current, timestamp: Date.now() });
+    }
+    currentStroke.current = null;
+    setDrawing(false);
+  };
+
+  const handleDblClick = (e) => {
+    // Pin nearest stroke
+    const strokes = strokesRef.current;
+    for (let i = strokes.length - 1; i >= 0; i--) {
+      const s = strokes[i];
+      for (const p of s.points) {
+        if (Math.abs(p.x - e.clientX) < 20 && Math.abs(p.y - e.clientY) < 20) {
+          strokes[i].pinned = !strokes[i].pinned;
+          forceRender(n => n + 1);
+          return;
+        }
+      }
+    }
+  };
+
+  return (
+    <>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onDoubleClick={handleDblClick}
+        style={{
+          position: "fixed", inset: 0, zIndex: 250,
+          pointerEvents: active ? "auto" : "none",
+          cursor: active ? (tool === "pen" ? "crosshair" : "none") : "default",
+          width: "100%", height: "100%",
+        }}
+      />
+      {/* Unified ghost bar — nearly invisible until needed */}
+      <div
+        onMouseEnter={() => setBarHover(true)}
+        onMouseLeave={() => setBarHover(false)}
+        style={{
+          position: "fixed", bottom: 12, left: 12, zIndex: 260,
+          display: "flex", alignItems: "center", gap: 0,
+          transition: "opacity 0.3s",
+        }}
+      >
+        {/* Exit mark */}
+        <div onClick={onExit} title="Return to Omote" style={{
+          padding: "8px 10px", cursor: "pointer",
+          opacity: active ? 0.9 : barHover ? 0.7 : 0.1,
+          transition: "opacity 0.3s",
+          display: "flex", alignItems: "center",
+        }}>
+          <SmallMark size={18}/>
+        </div>
+
+        {/* Tool tray */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 2,
+          padding: "5px 10px",
+          background: "rgba(26,26,26,0.8)",
+          backdropFilter: "blur(8px)",
+          borderRadius: 6,
+          opacity: (active || barHover) ? 1 : 0,
+          pointerEvents: (active || barHover) ? "auto" : "none",
+          transition: "opacity 0.3s",
+          maxHeight: 36,
+        }}>
+          <button onClick={() => { setActive(a => !a); }} style={{
+            padding: "4px 8px", border: "none", borderRadius: 3,
+            background: active ? "rgba(255,255,255,0.1)" : "transparent",
+            color: active ? "#fff" : "rgba(255,255,255,0.7)",
+            ...mono(8), cursor: "pointer", whiteSpace: "nowrap",
+          }}>
+            {active ? "ON" : "OFF"}
+          </button>
+
+          {active && <>
+            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)", margin: "0 3px" }}/>
+            <button onClick={() => setTool("pen")} style={{
+              padding: "4px 8px", border: "none", borderRadius: 3,
+              background: tool === "pen" ? "rgba(255,255,255,0.15)" : "transparent",
+              color: "#fff", ...mono(8), cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: config.penColor, border: config.penColor === "#FFFFFF" ? "1px solid rgba(255,255,255,0.3)" : "none" }}/>
+              {config.hotkeys.pen.toUpperCase()}
+            </button>
+            <button onClick={() => setTool("spotlight")} style={{
+              padding: "4px 8px", border: "none", borderRadius: 3,
+              background: tool === "spotlight" ? "rgba(255,255,255,0.15)" : "transparent",
+              color: "#fff", ...mono(8), cursor: "pointer",
+            }}>
+              {config.hotkeys.spotlight.toUpperCase()}
+            </button>
+            <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)", margin: "0 3px" }}/>
+            <button onClick={() => { strokesRef.current.pop(); forceRender(n => n + 1); }} style={{ padding: "4px 6px", border: "none", borderRadius: 3, background: "transparent", color: "rgba(255,255,255,0.5)", ...mono(7), cursor: "pointer" }}>
+              {config.hotkeys.undo.toUpperCase()}
+            </button>
+            <button onClick={() => { strokesRef.current = []; forceRender(n => n + 1); }} style={{ padding: "4px 6px", border: "none", borderRadius: 3, background: "transparent", color: "rgba(255,255,255,0.5)", ...mono(7), cursor: "pointer" }}>
+              {config.hotkeys.clear.toUpperCase()}
+            </button>
+          </>}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Storyteller Settings ─────────────────────────────────────
+
+function StorytellerSettings({ stages }) {
+  const cl = c();
+  const activeStages = stages.filter(s => s.cues?.some(c => (c.notes || []).length > 0));
+  return (
+    <div style={{ height:"100%", overflow:"auto", background:cl.bg, padding:"48px 40px" }}>
+      <div style={{ maxWidth:560, margin:"0 auto" }}>
+        <h2 style={{ ...ds(32), color:cl.ink, marginBottom:8 }}>Storyteller</h2>
+        <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:32 }}>Speaker notes visible only to you during Perform. Your audience never sees them.</p>
+
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:20 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>How It Works</div>
+          <div style={{ display:"flex", gap:16, marginBottom:16 }}>
+            {[
+              { step:"1", label:"Add Notes", desc:"Write talking points per cue in the Notes tab of any stage" },
+              { step:"2", label:"Install Companion", desc:"Add the Omote Companion Chrome extension" },
+              { step:"3", label:"Perform", desc:"Notes appear in the extension side panel — invisible to screen share" },
+            ].map(s => (
+              <div key={s.step} style={{ flex:1 }}>
+                <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy, marginBottom:8 }}>{s.step}</div>
+                <div style={{ ...ui(13,500), color:cl.ink, marginBottom:3 }}>{s.label}</div>
+                <div style={{ ...ui(12,300), color:cl.ink60 }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding:"24px 28px", background:cl.navyWash, border:`1px solid ${cl.borderLight}`, marginBottom:20 }}>
+          <div style={{ ...mono(9), color:cl.navy, marginBottom:10 }}>Omote Companion Extension</div>
+          <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:14 }}>The companion opens a side panel in Chrome that displays your speaker notes during Perform. When you share a tab in Zoom or Teams, the side panel is not captured.</p>
+          <button disabled style={{ padding:"10px 20px", background:cl.border, color:cl.ink40, border:"none", ...mono(9), cursor:"not-allowed" }}>Install Extension — Coming Soon</button>
+        </div>
+
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}`, marginBottom:20 }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:10 }}>Live Broadcasting</div>
+          <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:8 }}>During Perform, Omote broadcasts your session state. The companion extension listens automatically.</p>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}><div style={{ width:8, height:8, borderRadius:"50%", background:cl.matcha }}/><span style={{ ...ui(13,400), color:cl.matcha }}>Broadcasting is automatic during Perform</span></div>
+        </div>
+
+        <div style={{ padding:"24px 28px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>
+          <div style={{ ...mono(9), color:cl.ink40, marginBottom:14 }}>Your Notes</div>
+          {activeStages.length === 0 && <p style={{ ...ui(14,300), color:cl.ink40 }}>No speaker notes yet. Add them in the Notes tab when editing a stage.</p>}
+          {activeStages.map(s => (
+            <div key={s.id} style={{ marginBottom:16 }}>
+              <div style={{ ...ui(15,500), color:cl.ink, marginBottom:6, display:"flex", alignItems:"center", gap:8 }}><OIcon name={s.icon||"cube"} size={16} color={cl.navy}/>{s.name}</div>
+              {(s.cues||[]).filter(c=>(c.notes||[]).length>0).map(c => (
+                <div key={c.id} style={{ marginLeft:24, padding:"6px 0", display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ ...ui(13,400), color:cl.ink60 }}>{c.name}</span>
+                  <span style={{ ...mono(8), color:cl.ink20 }}>{c.notes.length} note{c.notes.length!==1?"s":""}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Performance({ stage, cue, companyName, onExit, pointerConfig }) {
+  // BroadcastChannel — emits session state for companion extension
+  const channelRef = useRef(null);
+  const [noteStep, setNoteStep] = useState(0);
+  const notes = cue.notes || [];
+
+  useEffect(() => {
+    const ch = new BroadcastChannel("omote-storyteller");
+    channelRef.current = ch;
+    // Broadcast initial state
+    ch.postMessage({ type:"session-start", stage:stage.name, cue:cue.name, company:companyName, notes, noteStep:0, timestamp:Date.now() });
+    return () => { ch.postMessage({ type:"session-end" }); ch.close(); };
+  }, []);
+
+  useEffect(() => {
+    if (channelRef.current) {
+      channelRef.current.postMessage({ type:"note-update", noteStep, note: notes[noteStep] || null, total: notes.length, cue: cue.name, timestamp: Date.now() });
+    }
+  }, [noteStep]);
+
+  // Arrow keys advance notes
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") { setNoteStep(s => Math.min(s + 1, notes.length - 1)); e.preventDefault(); }
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") { setNoteStep(s => Math.max(s - 1, 0)); e.preventDefault(); }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [notes.length]);
+
   return (
     <div style={{position:"fixed",inset:0,display:"flex",flexDirection:"column",zIndex:200,background:"#fff"}}>
       <div style={{flex:1}}><StageFrame content={cue.jsxCode||cue.shellHtml} contentType={cue.jsxCode?"jsx":"html"} data={stage.csvData} company={companyName} banner={cue.banner}/></div>
-      <div onClick={onExit} onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)} title="Return to Omote" style={{position:"fixed",bottom:16,left:16,zIndex:300,opacity:hover?0.8:0.15,transition:"opacity 0.3s",cursor:"pointer",padding:6}}><SmallMark size={20}/></div>
+      <PointerOverlay config={pointerConfig} onExit={onExit}/>
     </div>
   );
 }
@@ -791,6 +1316,7 @@ export default function Omote() {
   const [themeMode, setThemeMode] = useState("light");
   const [showAbout, setShowAbout] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [pointerConfig, setPointerConfig] = useState(DEFAULT_POINTER);
   const [users, setUsers] = useState([{ id:"1", name:"Tony", email:"admin", password:"tony1", role:"admin" }]);
 
   const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setScreen("hub"); };
@@ -806,6 +1332,8 @@ export default function Omote() {
   const handleNav = (id) => {
     if (id === "stages") goHome();
     else if (id === "settings") setScreen("personal-settings");
+    else if (id === "pointer") setScreen("pointer");
+    else if (id === "storyteller") setScreen("storyteller");
     else if (id === "users") setScreen("users");
     else if (id === "help") { /* placeholder */ }
     else if (id.startsWith("stage:")) {
@@ -837,6 +1365,8 @@ export default function Omote() {
 
               {screen==="users" && <Users users={users} onUpdate={setUsers}/>}
               {screen==="personal-settings" && <PersonalSettings user={user} themeMode={themeMode} setThemeMode={setThemeMode}/>}
+              {screen==="pointer" && <PointerSettings config={pointerConfig} onChange={setPointerConfig}/>}
+              {screen==="storyteller" && <StorytellerSettings stages={stages}/>}
 
               {screen==="backstage" && activeStage && <Backstage workspace={activeStage} isTutorial={activeStage?.isTutorial}
                 onUpdate={u=>{setStages(p=>p.map(s=>s.id===u.id?u:s));setActiveStage(u)}}
@@ -850,7 +1380,7 @@ export default function Omote() {
             </div>
           )}
 
-          {isPerforming && activeStage && activeCue && <Performance stage={activeStage} cue={activeCue} companyName={companyName} onExit={goHome}/>}
+          {isPerforming && activeStage && activeCue && <Performance stage={activeStage} cue={activeCue} companyName={companyName} onExit={goHome} pointerConfig={pointerConfig}/>}
         </div>
       </ThemeContext.Provider>
     </ErrorBoundary>
