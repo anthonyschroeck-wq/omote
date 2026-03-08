@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk7.7 — Demo Stage Designer
+// OMOTE mk7.8 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -146,16 +146,37 @@ class ErrorBoundary extends React.Component {
 
 // ─── Left Sidebar ────────────────────────────────────────────
 
-function IconPicker({ value, onChange, size=28 }) {
+function StageIcon({ icon, customIcon, size=20, color }) {
+  if (customIcon) return <img src={customIcon} style={{ width:size, height:size, objectFit:"contain", borderRadius:2 }}/>;
+  return <OIcon name={icon||"cube"} size={size} color={color||NAVY}/>;
+}
+
+function IconPicker({ value, onChange, customIcon, onCustomChange, size=28 }) {
   const cl = c();
+  const fileRef = useRef(null);
+  const handleUpload = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => { if (onCustomChange) onCustomChange(ev.target.result); };
+    r.readAsDataURL(f);
+    e.target.value = "";
+  };
+  const isCustom = !!customIcon;
   return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+    <div style={{ display:"flex", flexWrap:"wrap", gap:6, alignItems:"center" }}>
       {STAGE_ICONS.map(name => (
-        <div key={name} onClick={()=>onChange(name)} style={{ width:size+12, height:size+12, display:"flex", alignItems:"center", justifyContent:"center", border:`1px solid ${value===name?cl.navy:cl.borderLight}`, background:value===name?cl.navyWash:"transparent", cursor:"pointer", transition:"all 0.15s" }}
-          onMouseEnter={e=>{if(value!==name)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{if(value!==name)e.currentTarget.style.borderColor=cl.borderLight}}>
-          <OIcon name={name} size={size-6} color={value===name?cl.ink:cl.ink40}/>
+        <div key={name} onClick={()=>{onChange(name);if(onCustomChange)onCustomChange(null)}} style={{ width:size+12, height:size+12, display:"flex", alignItems:"center", justifyContent:"center", border:`1px solid ${value===name&&!isCustom?cl.navy:cl.borderLight}`, background:value===name&&!isCustom?cl.navyWash:"transparent", cursor:"pointer", transition:"all 0.15s" }}
+          onMouseEnter={e=>{if(value!==name||isCustom)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{if(value!==name||isCustom)e.currentTarget.style.borderColor=cl.borderLight}}>
+          <OIcon name={name} size={size-6} color={value===name&&!isCustom?cl.ink:cl.ink40}/>
         </div>
       ))}
+      <input ref={fileRef} type="file" accept=".png,.jpg,.jpeg,.svg,.ico,.webp" onChange={handleUpload} style={{ display:"none" }}/>
+      <div onClick={()=>fileRef.current?.click()} style={{ width:size+12, height:size+12, display:"flex", alignItems:"center", justifyContent:"center", border:`1px solid ${isCustom?cl.navy:cl.borderLight}`, background:isCustom?cl.navyWash:"transparent", cursor:"pointer", transition:"all 0.15s", overflow:"hidden" }}
+        onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>{if(!isCustom)e.currentTarget.style.borderColor=cl.borderLight}}
+        title="Upload custom icon">
+        {isCustom ? <img src={customIcon} style={{ width:size-4, height:size-4, objectFit:"contain" }}/> : <OIcon name="upload" size={size-8} color={cl.ink40}/>}
+      </div>
+      {isCustom && <button onClick={()=>{if(onCustomChange)onCustomChange(null)}} style={{ background:"none", border:"none", ...mono(8), color:cl.ink20, cursor:"pointer", padding:"4px" }}>Clear</button>}
     </div>
   );
 }
@@ -192,7 +213,7 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
           const isOpen = (item.id === "stages") || (item.id === "admin" && adminOpen);
 
           const subItems = item.id === "stages" ? (stages||[]).map(s => ({
-            key: s.id, icon: s.icon||"cube", label: s.name, nav: "stage:"+s.id,
+            key: s.id, icon: s.icon||"cube", customIcon: s.customIcon, label: s.name, nav: "stage:"+s.id,
             active: activeStageId === s.id && (screen==="backstage"||screen==="audience"||screen==="cue-select"),
           })) : item.id === "admin" ? [
             { key:"users", icon:"team", label:"Users", nav:"users", active: screen==="users" },
@@ -225,7 +246,7 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
                       background:si.active?cl.navyWash:"transparent", transition:"all 0.15s",
                     }} onMouseEnter={e=>{if(!si.active)e.currentTarget.style.background=cl.navyWash}} onMouseLeave={e=>{if(!si.active)e.currentTarget.style.background="transparent"}}
                       title={!expanded?si.label:""}>
-                      <OIcon name={si.icon} size={16} color={si.active?cl.ink:cl.ink40}/>
+                      <StageIcon icon={si.icon} customIcon={si.customIcon} size={16} color={si.active?cl.ink:cl.ink40}/>
                       {expanded && <span style={{ ...ui(12,si.active?500:400), color:si.active?cl.ink:cl.ink60, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{si.label}</span>}
                     </div>
                   ))}
@@ -246,13 +267,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.7</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.8</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.7</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.8</span>
           </div>
         )}
       </div>
@@ -829,17 +850,11 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled, isTutorial, onPr
   const [renaming, setRenaming] = useState(false);
   const [rn, setRn] = useState(workspace.name);
   const rnRef = useRef(null);
-  const faviconRef = useRef(null);
+  const [editingIcon, setEditingIcon] = useState(false);
   const commitRename = () => {
     const trimmed = rn.trim();
     if (trimmed && trimmed !== workspace.name) onUpdate({ ...workspace, name: trimmed });
     setRenaming(false);
-  };
-  const handleFavicon = (e) => {
-    const f = e.target.files?.[0]; if (!f) return;
-    const r = new FileReader();
-    r.onload = ev => onUpdate({ ...workspace, favicon: ev.target.result });
-    r.readAsDataURL(f);
   };
 
   const updateSet = (s) => { onUpdate({ ...workspace, set:s, csvData, columns, csvFilename:csvFile }); };
@@ -899,11 +914,16 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled, isTutorial, onPr
   return (
     <div style={{ height:"100%", background:cl.bg, display:"flex", flexDirection:"column" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:52, borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <input ref={faviconRef} type="file" accept=".png,.jpg,.svg,.ico" onChange={handleFavicon} style={{ display:"none" }}/>
-          <div onClick={()=>faviconRef.current?.click()} title={workspace.favicon?"Change tab icon":"Upload tab icon for performance"} style={{ width:28, height:28, borderRadius:6, border:`1px solid ${cl.borderLight}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", overflow:"hidden", transition:"all 0.15s", flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
-            {workspace.favicon ? <img src={workspace.favicon} style={{ width:20, height:20, objectFit:"contain" }}/> : <OIcon name={workspace.icon||"cube"} size={16} color={cl.ink40}/>}
+        <div style={{ display:"flex", alignItems:"center", gap:8, position:"relative" }}>
+          <div onClick={()=>setEditingIcon(!editingIcon)} title="Change icon" style={{ width:32, height:32, borderRadius:6, border:`1px solid ${editingIcon?cl.navy:cl.borderLight}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all 0.15s", flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>{if(!editingIcon)e.currentTarget.style.borderColor=cl.borderLight}}>
+            <StageIcon icon={workspace.icon} customIcon={workspace.customIcon} size={20} color={cl.ink60}/>
           </div>
+          {editingIcon && (
+            <div className="fadein" style={{ position:"absolute", top:40, left:0, zIndex:100, padding:"16px 20px", background:cl.surface, border:`1px solid ${cl.borderLight}`, boxShadow:"0 8px 24px rgba(0,0,0,0.1)", width:320 }}>
+              <div style={{ ...mono(8), color:cl.ink40, marginBottom:8 }}>Stage Icon</div>
+              <IconPicker value={workspace.icon} onChange={i=>{onUpdate({...workspace,icon:i,customIcon:null});setEditingIcon(false)}} customIcon={workspace.customIcon} onCustomChange={ci=>{onUpdate({...workspace,customIcon:ci});if(ci)setEditingIcon(false)}}/>
+            </div>
+          )}
           {renaming ? (
             <input ref={rnRef} value={rn} onChange={e=>setRn(e.target.value)} onBlur={commitRename} onKeyDown={e=>{if(e.key==="Enter")commitRename();if(e.key==="Escape"){setRn(workspace.name);setRenaming(false)}}} autoFocus style={{ ...ds(20), color:cl.ink, border:"none", borderBottom:`1px solid ${cl.navy}`, background:"transparent", outline:"none", padding:"0 2px", width:Math.max(120,rn.length*12) }}/>
           ) : (
@@ -1128,7 +1148,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.7</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.8</div>
       </div>
     </div>
   );
@@ -1140,10 +1160,9 @@ const TEST_USER = { id:"test-user-000", name:"Test User", email:"test@omote.inte
 
 function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, users, onShare, tutorialStep }) {
   const cl = c();
-  const [modal,setModal]=useState(false); const [nn,setNn]=useState(""); const [nd,setNd]=useState(""); const [ni,setNi]=useState("rocket"); const [nf,setNf]=useState(null);
-  const nfRef = useRef(null);
+  const [modal,setModal]=useState(false); const [nn,setNn]=useState(""); const [nd,setNd]=useState(""); const [ni,setNi]=useState("rocket"); const [nci,setNci]=useState(null);
   const [shareModal, setShareModal] = useState(null);
-  const reset=()=>{setModal(false);setNn("");setNd("");setNi("rocket");setNf(null)};
+  const reset=()=>{setModal(false);setNn("");setNd("");setNi("rocket");setNci(null)};
   const hasTutorial = stages.some(s=>s.isTutorial);
   return (
     <div style={{ height:"100%", overflow:"auto", background:cl.bg }}>
@@ -1158,7 +1177,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
               <div style={{ padding:"24px 28px", border: isTutHighlight ? `2px solid ${cl.navy}` : `1px solid ${cl.borderLight}`, background: isTutHighlight ? cl.navyWash : cl.surface, transition:"all 0.3s", boxShadow: isTutHighlight ? `0 0 0 4px ${cl.navy}20, 0 4px 20px rgba(90,106,124,0.15)` : "none", position:"relative" }} onMouseEnter={e=>{if(!isTutHighlight)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>{if(!isTutHighlight)e.currentTarget.style.borderColor=cl.borderLight}}>
                 {isTutHighlight && <div style={{ position:"absolute", top:-10, right:16, padding:"2px 10px", background:cl.navy, color:"#fff", ...mono(8), borderRadius:3 }}>Start here</div>}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}><OIcon name={s.icon||"cube"} size={18} color={cl.navy}/><h3 style={{ ...ds(22), color:cl.ink }}>{s.name}</h3>{s.isTutorial && <span style={{ ...mono(7), padding:"2px 6px", background:cl.navyWash, color:cl.navy }}>Tutorial</span>}</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}><StageIcon icon={s.icon} customIcon={s.customIcon} size={18} color={cl.navy}/><h3 style={{ ...ds(22), color:cl.ink }}>{s.name}</h3>{s.isTutorial && <span style={{ ...mono(7), padding:"2px 6px", background:cl.navyWash, color:cl.navy }}>Tutorial</span>}</div>
                   <span style={{ ...mono(8), padding:"2px 8px", background:s.status==="active"?`${cl.matcha}15`:cl.goldWash, color:s.status==="active"?cl.matcha:cl.gold }}>{s.status==="active"?"Active":"Draft"}</span>
                 </div>
                 <p style={{ ...ui(14,300), color:cl.ink60, marginBottom:4 }}>{s.description}</p>
@@ -1193,9 +1212,9 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
           {isAdminRole(role) && <div className="breathe" style={{ animationDelay:`${0.15+stages.length*0.05}s` }}><div onClick={()=>setModal(true)} style={{padding:"24px 28px",border:`1px dashed ${cl.border}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:160,gap:14,transition:"all 0.3s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.surface}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.border;e.currentTarget.style.background="transparent"}}><OIcon name="plus" size={18} color={cl.ink40}/><span style={{...mono(10),color:cl.ink40}}>New Stage</span></div></div>}
         </div>
       </div>
-      {modal && (<><div className="fadein" onClick={reset} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}><div style={{padding:28}}><h3 style={{...ds(24),color:cl.ink,marginBottom:24}}>New Stage</h3><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni,favicon:nf});reset()}}} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Description</label><input type="text" value={nd} onChange={e=>setNd(e.target.value)} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Icon</label><IconPicker value={ni} onChange={setNi}/></div><div style={{marginBottom:24}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Tab Icon <span style={{...ui(11,300),color:cl.ink20}}>(shown in browser during performance)</span></label><input ref={nfRef} type="file" accept=".png,.jpg,.svg,.ico" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>setNf(ev.target.result);r.readAsDataURL(f)}} style={{display:"none"}}/><div style={{display:"flex",alignItems:"center",gap:10}}><div onClick={()=>nfRef.current?.click()} style={{width:36,height:36,borderRadius:8,border:`1px solid ${nf?cl.navy:cl.borderLight}`,background:nf?cl.navyWash:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",overflow:"hidden",transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>{if(!nf)e.currentTarget.style.borderColor=cl.borderLight}}>{nf?<img src={nf} style={{width:24,height:24,objectFit:"contain"}}/>:<OIcon name="upload" size={16} color={cl.ink40}/>}</div>{nf?<><span style={{...ui(13,400),color:cl.ink60}}>Custom icon set</span><button onClick={()=>setNf(null)} style={{background:"none",border:"none",...mono(9),color:cl.ink20,cursor:"pointer"}}>Remove</button></>:<span style={{...ui(13,300),color:cl.ink20}}>Optional — defaults to stage icon</span>}</div></div><div style={{display:"flex",gap:10}}><button onClick={reset} style={{flex:1,padding:"10px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button><button onClick={()=>{if(nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni,favicon:nf});reset()}}} disabled={!nn.trim()} style={{flex:1,padding:"10px 0",background:nn.trim()?cl.ink:cl.border,color:nn.trim()?cl.bg:cl.ink40,border:"none",...mono(10),cursor:nn.trim()?"pointer":"not-allowed"}}>Create</button></div></div></div></>)}
+      {modal && (<><div className="fadein" onClick={reset} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}><div style={{padding:28}}><h3 style={{...ds(24),color:cl.ink,marginBottom:24}}>New Stage</h3><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni,customIcon:nci});reset()}}} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Description</label><input type="text" value={nd} onChange={e=>setNd(e.target.value)} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}}/></div><div style={{marginBottom:24}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Icon <span style={{...ui(11,300),color:cl.ink20}}>Select a preset or upload your own</span></label><IconPicker value={ni} onChange={setNi} customIcon={nci} onCustomChange={setNci}/></div><div style={{display:"flex",gap:10}}><button onClick={reset} style={{flex:1,padding:"10px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button><button onClick={()=>{if(nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni,customIcon:nci});reset()}}} disabled={!nn.trim()} style={{flex:1,padding:"10px 0",background:nn.trim()?cl.ink:cl.border,color:nn.trim()?cl.bg:cl.ink40,border:"none",...mono(10),cursor:nn.trim()?"pointer":"not-allowed"}}>Create</button></div></div></div></>)}
       {shareModal && (<><div className="fadein" onClick={()=>setShareModal(null)} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)",maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
-        <div style={{padding:"24px 28px 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}><OIcon name={shareModal.icon||"cube"} size={20} color={cl.navy}/><h3 style={{...ds(22),color:cl.ink}}>Share Stage</h3></div><p style={{...ui(14,300),color:cl.ink60}}>Select users who can access <strong>{shareModal.name}</strong></p></div>
+        <div style={{padding:"24px 28px 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}><StageIcon icon={shareModal.icon} customIcon={shareModal.customIcon} size={20} color={cl.navy}/><h3 style={{...ds(22),color:cl.ink}}>Share Stage</h3></div><p style={{...ui(14,300),color:cl.ink60}}>Select users who can access <strong>{shareModal.name}</strong></p></div>
         <div style={{flex:1,overflow:"auto",padding:"0 28px 24px"}}>
           {(() => { const shareUsers = [TEST_USER, ...(users||[]).filter(u=>!isAdminRole(u.role))]; return shareUsers.length===0 ? <div style={{padding:"20px 0",textAlign:"center",...ui(14,300),color:cl.ink40}}>No users to share with. Invite users first.</div> : shareUsers.map(u => {
             const assigned = (shareModal.assignedUsers||[]).includes(u.id);
@@ -1797,7 +1816,7 @@ function StorytellerSettings({ stages }) {
           {activeStages.length === 0 && <p style={{ ...ui(14,300), color:cl.ink40 }}>No speaker notes yet. Add them in the Notes tab when editing a stage.</p>}
           {activeStages.map(s => (
             <div key={s.id} style={{ marginBottom:16 }}>
-              <div style={{ ...ui(15,500), color:cl.ink, marginBottom:6, display:"flex", alignItems:"center", gap:8 }}><OIcon name={s.icon||"cube"} size={16} color={cl.navy}/>{s.name}</div>
+              <div style={{ ...ui(15,500), color:cl.ink, marginBottom:6, display:"flex", alignItems:"center", gap:8 }}><StageIcon icon={s.icon} customIcon={s.customIcon} size={16} color={cl.navy}/>{s.name}</div>
               {(s.cues||[]).filter(c=>(c.notes||[]).length>0).map(c => (
                 <div key={c.id} style={{ marginLeft:24, padding:"6px 0", display:"flex", alignItems:"center", gap:8 }}>
                   <span style={{ ...ui(13,400), color:cl.ink60 }}>{c.name}</span>
@@ -2261,7 +2280,7 @@ function HelpPage({ onTutorial }) {
         </div>
 
         <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.7</p>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.8</p>
           <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
@@ -2401,7 +2420,7 @@ function Users({ users, stages, onRefresh, currentUserId, onImpersonate, onUpdat
                 <div style={{marginLeft:48,marginTop:6}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                     {userStages.length > 0 ? userStages.map(s => (
-                      <span key={s.id} style={{display:"inline-flex",alignItems:"center",gap:4,...mono(8),padding:"2px 8px",background:cl.navyWash,color:cl.navy,border:`1px solid ${cl.borderLight}`}}><OIcon name={s.icon||"cube"} size={10} color={cl.navy}/>{s.name}</span>
+                      <span key={s.id} style={{display:"inline-flex",alignItems:"center",gap:4,...mono(8),padding:"2px 8px",background:cl.navyWash,color:cl.navy,border:`1px solid ${cl.borderLight}`}}><StageIcon icon={s.icon} customIcon={s.customIcon} size={10} color={cl.navy}/>{s.name}</span>
                     )) : <span style={{...mono(8),color:cl.ink20}}>No stages assigned</span>}
                   </div>
                 </div>
@@ -2441,9 +2460,9 @@ function PerformanceShell({ session }) {
     document.title = session.companyName || session.stage?.name || "Demo";
     const link = document.querySelector("link[rel='icon']") || document.createElement("link");
     link.rel = "icon";
-    if (session.stage?.favicon) {
+    if (session.stage?.customIcon) {
       link.type = "image/png";
-      link.href = session.stage.favicon;
+      link.href = session.stage.customIcon;
     } else {
       link.type = "image/svg+xml";
       link.href = "/favicon.svg";
@@ -2581,7 +2600,7 @@ export default function Omote() {
   const launchPerformance = (stage, cue, company) => {
     const id = Math.random().toString(36).slice(2, 11);
     const session = {
-      stage: { name: stage.name, csvData: stage.csvData, favicon: stage.favicon || null },
+      stage: { name: stage.name, csvData: stage.csvData, customIcon: stage.customIcon || null },
       cue: { name: cue.name, shellHtml: cue.shellHtml, jsxCode: cue.jsxCode, method: cue.method, banner: cue.banner, notes: cue.notes },
       companyName: company || "Acme Corp",
       pointerConfig,
@@ -2630,7 +2649,7 @@ export default function Omote() {
   // ─── Stage CRUD (persists to Supabase) ───
   const handleCreateStage = async (s) => {
     try {
-      const setData = s.favicon ? { favicon: s.favicon } : {};
+      const setData = s.customIcon ? { customIcon: s.customIcon } : {};
       const id = await db.createStage({ ...s, set: setData }, user.id);
       db.logActivity(user.id, "create_stage", { name: s.name });
       const full = { ...s, id, set: setData, cues:[], assignedUsers:[] };
@@ -2650,7 +2669,7 @@ export default function Omote() {
       await db.updateStage(updated.id, {
         name: updated.name, description: updated.description, icon: updated.icon,
         status: updated.status, csvData: updated.csvData, columns: updated.columns,
-        csvFilename: updated.csvFilename, set: { ...updated.set, favicon: updated.favicon || null },
+        csvFilename: updated.csvFilename, set: { ...updated.set, customIcon: updated.customIcon || updated.set?.customIcon || null },
       });
       // Sync cues — remap IDs from Supabase
       const savedCues = [];
