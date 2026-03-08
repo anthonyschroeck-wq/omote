@@ -8,7 +8,7 @@ const hash = window.location.hash;
 const match = hash.match(/^#\/s\/([a-zA-Z0-9]+)$/);
 if (match) {
   try {
-    const data = JSON.parse(sessionStorage.getItem("omote-perf-" + match[1]));
+    const data = JSON.parse(localStorage.getItem("omote-perf-" + match[1]));
     if (data) perfSession = data;
   } catch {}
 }
