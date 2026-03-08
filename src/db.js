@@ -117,6 +117,7 @@ export async function getStages() {
     columns: s.csv_columns,
     csvFilename: s.csv_filename,
     set: s.set_data || {},
+    favicon: s.set_data?.favicon || null,
     cues: (s.cues || []).sort((a, b) => a.sort_order - b.sort_order).map(c => ({
       id: c.id,
       name: c.name,

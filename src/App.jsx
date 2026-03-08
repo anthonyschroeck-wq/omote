@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk7.5 — Demo Stage Designer
+// OMOTE mk7.6 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -246,13 +246,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.5</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.6</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.5</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.6</span>
           </div>
         )}
       </div>
@@ -829,10 +829,17 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled, isTutorial, onPr
   const [renaming, setRenaming] = useState(false);
   const [rn, setRn] = useState(workspace.name);
   const rnRef = useRef(null);
+  const faviconRef = useRef(null);
   const commitRename = () => {
     const trimmed = rn.trim();
     if (trimmed && trimmed !== workspace.name) onUpdate({ ...workspace, name: trimmed });
     setRenaming(false);
+  };
+  const handleFavicon = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => onUpdate({ ...workspace, favicon: ev.target.result });
+    r.readAsDataURL(f);
   };
 
   const updateSet = (s) => { onUpdate({ ...workspace, set:s, csvData, columns, csvFilename:csvFile }); };
@@ -893,6 +900,10 @@ function Backstage({ workspace, onUpdate, onPublish, aiEnabled, isTutorial, onPr
     <div style={{ height:"100%", background:cl.bg, display:"flex", flexDirection:"column" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", minHeight:52, borderBottom:`1px solid ${cl.borderLight}`, background:cl.surface }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <input ref={faviconRef} type="file" accept=".png,.jpg,.svg,.ico" onChange={handleFavicon} style={{ display:"none" }}/>
+          <div onClick={()=>faviconRef.current?.click()} title={workspace.favicon?"Change tab icon":"Upload tab icon for performance"} style={{ width:28, height:28, borderRadius:6, border:`1px solid ${cl.borderLight}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", overflow:"hidden", transition:"all 0.15s", flexShrink:0 }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
+            {workspace.favicon ? <img src={workspace.favicon} style={{ width:20, height:20, objectFit:"contain" }}/> : <OIcon name={workspace.icon||"cube"} size={16} color={cl.ink40}/>}
+          </div>
           {renaming ? (
             <input ref={rnRef} value={rn} onChange={e=>setRn(e.target.value)} onBlur={commitRename} onKeyDown={e=>{if(e.key==="Enter")commitRename();if(e.key==="Escape"){setRn(workspace.name);setRenaming(false)}}} autoFocus style={{ ...ds(20), color:cl.ink, border:"none", borderBottom:`1px solid ${cl.navy}`, background:"transparent", outline:"none", padding:"0 2px", width:Math.max(120,rn.length*12) }}/>
           ) : (
@@ -1117,7 +1128,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.5</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.6</div>
       </div>
     </div>
   );
@@ -2249,7 +2260,7 @@ function HelpPage({ onTutorial }) {
         </div>
 
         <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.5</p>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.6</p>
           <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
@@ -2422,7 +2433,39 @@ function Users({ users, stages, onRefresh, currentUserId, onImpersonate, onUpdat
 
 // ─── Main ────────────────────────────────────────────────────
 
+// ─── Performance Shell (new tab) ─────────────────────────────
+
+function PerformanceShell({ session }) {
+  useEffect(() => {
+    document.title = session.companyName || session.stage?.name || "Demo";
+    const link = document.querySelector("link[rel='icon']") || document.createElement("link");
+    link.rel = "icon";
+    if (session.stage?.favicon) {
+      link.type = "image/png";
+      link.href = session.stage.favicon;
+    } else {
+      link.type = "image/svg+xml";
+      link.href = "/favicon.svg";
+    }
+    if (!link.parentElement) document.head.appendChild(link);
+  }, []);
+
+  return (
+    <ThemeContext.Provider value={{ mode: session.themeMode || "light" }}>
+      <Performance
+        stage={session.stage}
+        cue={session.cue}
+        companyName={session.companyName}
+        pointerConfig={session.pointerConfig || DEFAULT_POINTER}
+        onExit={() => window.close()}
+      />
+    </ThemeContext.Provider>
+  );
+}
+
 export default function Omote() {
+  // ─── All hooks must be called unconditionally ───
+  const [perfSession, setPerfSession] = useState(null);
   const [screen, setScreen] = useState("loading");
   const [user, setUser] = useState(null);
   const [stages, setStages] = useState([]);
@@ -2438,6 +2481,21 @@ export default function Omote() {
   const [pointerConfig, setPointerConfig] = useState(DEFAULT_POINTER);
   const [impersonating, setImpersonating] = useState(null);
   const [tutorialStep, setTutorialStep] = useState(null);
+
+  // Performance new-tab detection
+  useEffect(() => {
+    const hash = window.location.hash;
+    const match = hash.match(/^#\/s\/([a-zA-Z0-9]+)$/);
+    if (match) {
+      try {
+        const data = JSON.parse(sessionStorage.getItem("omote-perf-" + match[1]));
+        if (data) setPerfSession(data);
+      } catch {}
+    }
+  }, []);
+
+  // Early return for performance tab
+  if (perfSession) return <PerformanceShell session={perfSession}/>;
 
   const effectiveRole = impersonating ? impersonating.role : (user?.role || "user");
   const effectiveUserId = impersonating ? impersonating.id : user?.id;
@@ -2518,8 +2576,20 @@ export default function Omote() {
   };
 
   const goHome = () => { setActiveStage(null); setActiveCue(null); setCompanyName(""); setPersona(null); setAccount(null); setScreen("hub"); };
+
+  const launchPerformance = (stage, cue, company) => {
+    const id = Math.random().toString(36).slice(2, 11);
+    const session = {
+      stage: { name: stage.name, csvData: stage.csvData, favicon: stage.favicon || null },
+      cue: { name: cue.name, shellHtml: cue.shellHtml, jsxCode: cue.jsxCode, method: cue.method, banner: cue.banner, notes: cue.notes },
+      companyName: company || "Acme Corp",
+      pointerConfig,
+      themeMode,
+    };
+    sessionStorage.setItem("omote-perf-" + id, JSON.stringify(session));
+    window.open(window.location.origin + window.location.pathname + "#/s/" + id, "_blank");
+  };
   const isLoggedIn = screen !== "login" && screen !== "loading";
-  const isPerforming = screen === "perform";
   const theme = { mode: themeMode };
 
   const startTutorial = () => {
@@ -2578,7 +2648,7 @@ export default function Omote() {
       await db.updateStage(updated.id, {
         name: updated.name, description: updated.description, icon: updated.icon,
         status: updated.status, csvData: updated.csvData, columns: updated.columns,
-        csvFilename: updated.csvFilename, set: updated.set,
+        csvFilename: updated.csvFilename, set: { ...updated.set, favicon: updated.favicon || null },
       });
       // Sync cues — remap IDs from Supabase
       const savedCues = [];
@@ -2663,16 +2733,16 @@ export default function Omote() {
   return (
     <ErrorBoundary>
       <ThemeContext.Provider value={theme}>
-        <div style={{ fontFamily:"'Source Sans 3',sans-serif", color:themeMode==="dark"?DT.ink:LT.ink, ...(isLoggedIn && !isPerforming ? { display:"flex", height:"100vh", overflow:"hidden" } : {}) }}>
+        <div style={{ fontFamily:"'Source Sans 3',sans-serif", color:themeMode==="dark"?DT.ink:LT.ink, ...(isLoggedIn ? { display:"flex", height:"100vh", overflow:"hidden" } : {}) }}>
           <style>{STYLES}</style>
 
           {screen==="login" && <Login onLogin={handleLogin}/>}
 
-          {isLoggedIn && !isPerforming && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={{...user, role:effectiveRole}} stages={visibleStages} activeStageId={activeStage?.id} onLogout={handleLogout}/>}
+          {isLoggedIn && <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} screen={screen} onNavigate={handleNav} user={{...user, role:effectiveRole}} stages={visibleStages} activeStageId={activeStage?.id} onLogout={handleLogout}/>}
 
           {showAbout && <AboutModal onClose={()=>setShowAbout(false)} onTutorial={startTutorial}/>}
 
-          {isLoggedIn && !isPerforming && (
+          {isLoggedIn && (
             <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column" }}>
               {/* Top bar — impersonation banner only */}
               {impersonating && (
@@ -2705,18 +2775,17 @@ export default function Omote() {
               {screen==="backstage" && activeStage && <Backstage workspace={activeStage} aiEnabled={user?.role==="super-admin" || !!(user?.flags?.ai_builder)} isTutorial={!!activeStage?.isTutorial}
                 onUpdate={handleUpdateStage}
                 onPublish={handlePublish}
-                onPreview={cue=>{setActiveCue(cue);setCompanyName(companyName||"Acme Corp");setScreen("perform")}}/>}
+                onPreview={cue=>{launchPerformance(activeStage,cue,companyName||"Acme Corp")}}/>}
 
               {screen==="audience" && activeStage && <AudienceSetup stage={activeStage} companyName={companyName} setCompanyName={setCompanyName} persona={persona} setPersona={setPersona} account={account} setAccount={setAccount}
                 onNext={()=>{db.logActivity(user.id,"perform",{stage:activeStage.name,company:companyName});setScreen("cue-select")}}
                 onSkip={()=>{if(!companyName.trim())setCompanyName("Acme Corp");setScreen("cue-select")}}/>}
 
               {screen==="cue-select" && activeStage && <CueSelect stage={activeStage} companyName={companyName}
-                onSelect={v=>{setActiveCue(v);setScreen("perform")}}/>}
+                onSelect={v=>{launchPerformance(activeStage,v,companyName);setScreen("hub")}}/>}
             </div>
           )}
 
-          {isPerforming && activeStage && activeCue && <Performance stage={activeStage} cue={activeCue} companyName={companyName} onExit={goHome} pointerConfig={pointerConfig}/>}
         </div>
       </ThemeContext.Provider>
     </ErrorBoundary>
