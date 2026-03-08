@@ -2,6 +2,9 @@
 
 All notable changes to Omote are documented here.
 
+## mk8.4 — 2026-03-08
+- Version bump test: validate centralized PAT push from Batcave project
+
 ## mk7.9 — 2026-03-07
 - Fix performance new-tab crash (React error #300): move hash detection to main.jsx entry point
 
