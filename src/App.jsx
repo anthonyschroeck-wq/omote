@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk7.6 — Demo Stage Designer
+// OMOTE mk7.7 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -246,13 +246,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.6</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.7</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.6</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.7</span>
           </div>
         )}
       </div>
@@ -1128,7 +1128,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.6</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.7</div>
       </div>
     </div>
   );
@@ -1140,9 +1140,10 @@ const TEST_USER = { id:"test-user-000", name:"Test User", email:"test@omote.inte
 
 function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, users, onShare, tutorialStep }) {
   const cl = c();
-  const [modal,setModal]=useState(false); const [nn,setNn]=useState(""); const [nd,setNd]=useState(""); const [ni,setNi]=useState("rocket");
-  const [shareModal, setShareModal] = useState(null); // stage being shared
-  const reset=()=>{setModal(false);setNn("");setNd("");setNi("rocket")};
+  const [modal,setModal]=useState(false); const [nn,setNn]=useState(""); const [nd,setNd]=useState(""); const [ni,setNi]=useState("rocket"); const [nf,setNf]=useState(null);
+  const nfRef = useRef(null);
+  const [shareModal, setShareModal] = useState(null);
+  const reset=()=>{setModal(false);setNn("");setNd("");setNi("rocket");setNf(null)};
   const hasTutorial = stages.some(s=>s.isTutorial);
   return (
     <div style={{ height:"100%", overflow:"auto", background:cl.bg }}>
@@ -1192,7 +1193,7 @@ function Hub({ stages, onSelect, onEdit, onCreate, onDelete, onTutorial, role, u
           {isAdminRole(role) && <div className="breathe" style={{ animationDelay:`${0.15+stages.length*0.05}s` }}><div onClick={()=>setModal(true)} style={{padding:"24px 28px",border:`1px dashed ${cl.border}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:160,gap:14,transition:"all 0.3s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=cl.navy;e.currentTarget.style.background=cl.surface}} onMouseLeave={e=>{e.currentTarget.style.borderColor=cl.border;e.currentTarget.style.background="transparent"}}><OIcon name="plus" size={18} color={cl.ink40}/><span style={{...mono(10),color:cl.ink40}}>New Stage</span></div></div>}
         </div>
       </div>
-      {modal && (<><div className="fadein" onClick={reset} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}><div style={{padding:28}}><h3 style={{...ds(24),color:cl.ink,marginBottom:24}}>New Stage</h3><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni});reset()}}} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Description</label><input type="text" value={nd} onChange={e=>setNd(e.target.value)} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}}/></div><div style={{marginBottom:24}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Icon</label><IconPicker value={ni} onChange={setNi}/></div><div style={{display:"flex",gap:10}}><button onClick={reset} style={{flex:1,padding:"10px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button><button onClick={()=>{if(nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni});reset()}}} disabled={!nn.trim()} style={{flex:1,padding:"10px 0",background:nn.trim()?cl.ink:cl.border,color:nn.trim()?cl.bg:cl.ink40,border:"none",...mono(10),cursor:nn.trim()?"pointer":"not-allowed"}}>Create</button></div></div></div></>)}
+      {modal && (<><div className="fadein" onClick={reset} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}><div style={{padding:28}}><h3 style={{...ds(24),color:cl.ink,marginBottom:24}}>New Stage</h3><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Name</label><input type="text" value={nn} onChange={e=>setNn(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter"&&nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni,favicon:nf});reset()}}} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}} onFocus={e=>e.target.style.borderColor=cl.navy} onBlur={e=>e.target.style.borderColor=cl.border}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:6}}>Description</label><input type="text" value={nd} onChange={e=>setNd(e.target.value)} style={{width:"100%",padding:"10px 12px",border:`1px solid ${cl.border}`,background:cl.bg,...ui(16),color:cl.ink,outline:"none"}}/></div><div style={{marginBottom:14}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Icon</label><IconPicker value={ni} onChange={setNi}/></div><div style={{marginBottom:24}}><label style={{...mono(9),color:cl.ink40,display:"block",marginBottom:8}}>Tab Icon <span style={{...ui(11,300),color:cl.ink20}}>(shown in browser during performance)</span></label><input ref={nfRef} type="file" accept=".png,.jpg,.svg,.ico" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>setNf(ev.target.result);r.readAsDataURL(f)}} style={{display:"none"}}/><div style={{display:"flex",alignItems:"center",gap:10}}><div onClick={()=>nfRef.current?.click()} style={{width:36,height:36,borderRadius:8,border:`1px solid ${nf?cl.navy:cl.borderLight}`,background:nf?cl.navyWash:"transparent",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",overflow:"hidden",transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>{if(!nf)e.currentTarget.style.borderColor=cl.borderLight}}>{nf?<img src={nf} style={{width:24,height:24,objectFit:"contain"}}/>:<OIcon name="upload" size={16} color={cl.ink40}/>}</div>{nf?<><span style={{...ui(13,400),color:cl.ink60}}>Custom icon set</span><button onClick={()=>setNf(null)} style={{background:"none",border:"none",...mono(9),color:cl.ink20,cursor:"pointer"}}>Remove</button></>:<span style={{...ui(13,300),color:cl.ink20}}>Optional — defaults to stage icon</span>}</div></div><div style={{display:"flex",gap:10}}><button onClick={reset} style={{flex:1,padding:"10px 0",background:"none",border:`1px solid ${cl.border}`,...mono(10),color:cl.ink40,cursor:"pointer"}}>Cancel</button><button onClick={()=>{if(nn.trim()){onCreate({name:nn,description:nd||"New stage",icon:ni,favicon:nf});reset()}}} disabled={!nn.trim()} style={{flex:1,padding:"10px 0",background:nn.trim()?cl.ink:cl.border,color:nn.trim()?cl.bg:cl.ink40,border:"none",...mono(10),cursor:nn.trim()?"pointer":"not-allowed"}}>Create</button></div></div></div></>)}
       {shareModal && (<><div className="fadein" onClick={()=>setShareModal(null)} style={{position:"fixed",inset:0,background:"rgba(26,26,26,0.25)",zIndex:200,backdropFilter:"blur(2px)"}}/><div className="fadein" style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:440,background:cl.surface,border:`1px solid ${cl.borderLight}`,zIndex:201,boxShadow:"0 16px 48px rgba(0,0,0,0.12)",maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
         <div style={{padding:"24px 28px 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}><OIcon name={shareModal.icon||"cube"} size={20} color={cl.navy}/><h3 style={{...ds(22),color:cl.ink}}>Share Stage</h3></div><p style={{...ui(14,300),color:cl.ink60}}>Select users who can access <strong>{shareModal.name}</strong></p></div>
         <div style={{flex:1,overflow:"auto",padding:"0 28px 24px"}}>
@@ -2260,7 +2261,7 @@ function HelpPage({ onTutorial }) {
         </div>
 
         <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.6</p>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.7</p>
           <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
@@ -2629,9 +2630,10 @@ export default function Omote() {
   // ─── Stage CRUD (persists to Supabase) ───
   const handleCreateStage = async (s) => {
     try {
-      const id = await db.createStage(s, user.id);
+      const setData = s.favicon ? { favicon: s.favicon } : {};
+      const id = await db.createStage({ ...s, set: setData }, user.id);
       db.logActivity(user.id, "create_stage", { name: s.name });
-      const full = { ...s, id, set:{}, cues:[], assignedUsers:[] };
+      const full = { ...s, id, set: setData, cues:[], assignedUsers:[] };
       setStages(p => [...p, full]);
       setActiveStage(full);
       setScreen("backstage");
