@@ -1,0 +1,36 @@
+name: Omote CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke test
+        run: node scripts/smoke-test.cjs
+
+      - name: Check bundle size
+        run: |
+          SIZE=$(du -sb dist/ | cut -f1)
+          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+          echo "Bundle size: ${SIZE_MB}MB"
+          if [ "$SIZE" -gt 5242880 ]; then
+            echo "::warning::Bundle size is ${SIZE_MB}MB — consider code splitting"
+          fi
