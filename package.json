@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "build:runtime": "vite build --config vite.runtime.config.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node scripts/smoke-test.cjs",
+    "deploy:stage": "node scripts/deploy.cjs stage",
+    "deploy:promote": "node scripts/deploy.cjs promote",
+    "deploy:hotfix": "node scripts/deploy.cjs hotfix",
+    "deploy:status": "node scripts/deploy.cjs status"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
