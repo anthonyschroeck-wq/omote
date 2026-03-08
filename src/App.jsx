@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk7.4 — Demo Stage Designer
+// OMOTE mk7.5 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -246,13 +246,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.4</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk7.5</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.4</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk7.5</span>
           </div>
         )}
       </div>
@@ -293,7 +293,7 @@ function buildSystemPrompt(options = {}) {
     // Editing existing source
     return `You are a UI engineer for Omote, a demo stage designer. You are editing an existing ${isJsx ? "React JSX component" : "HTML document"}.
 RULES: Return ONLY the complete updated ${isJsx ? "JSX source code" : "raw HTML"}. No markdown, no backticks, no explanation. Return the ENTIRE file, not just the changed parts.
-${isJsx ? "Return valid JSX with a default export function component. You may use React hooks, Recharts, D3, Lodash, and Tailwind CSS." : "All navigation/tabs must use onclick handlers with inline JS to show/hide sections. Include working hover states, click handlers, and realistic data. The page must be fully self-contained."}
+${isJsx ? "Return valid JSX (NOT TypeScript — no type annotations, interfaces, or generics). Use a default export function component. You may use React hooks, Recharts, D3, Lodash, and Tailwind CSS. Do not use TypeScript syntax." : "All navigation/tabs must use onclick handlers with inline JS to show/hide sections. Include working hover states, click handlers, and realistic data. The page must be fully self-contained."}
 
 CURRENT SOURCE:
 ${existingSource}
@@ -326,8 +326,30 @@ JS access: window.__DEMO_DATA__ (array of objects), window.__COMPANY_NAME__ (str
 const BLESSED = { "react":"React", "react-dom":"ReactDOM", "react-dom/client":"ReactDOM", "recharts":"Recharts", "lodash":"_", "d3":"d3" };
 const NAMED_MAP = { "react":(n)=>`React.${n}`, "recharts":(n)=>`Recharts.${n}`, "d3":(n)=>`d3.${n}` };
 
+function sanitizeAICode(raw) {
+  let code = raw;
+  // Extract from code fence if present (handles jsx, tsx, javascript, js, typescript, etc.)
+  const fenceMatch = code.match(/```(?:jsx|tsx|javascript|typescript|js|ts)?\s*\n([\s\S]*?)```/);
+  if (fenceMatch) code = fenceMatch[1];
+  // Strip any remaining fences
+  code = code.replace(/```(?:jsx|tsx|javascript|typescript|js|ts)?\s*\n?/g, "").replace(/```\s*$/gm, "");
+  // Strip TypeScript: type annotations on function params/returns, interface/type blocks, `as X`
+  code = code.replace(/^interface\s+\w+\s*\{[^}]*\}/gm, "");
+  code = code.replace(/^type\s+\w+\s*=\s*[^;]+;/gm, "");
+  code = code.replace(/:\s*React\.\w+(<[^>]*>)?/g, "");
+  code = code.replace(/:\s*(?:string|number|boolean|any|void|null|undefined|object)(?:\[\])?/g, "");
+  code = code.replace(/:\s*\{[^}]{0,200}\}/g, ""); // inline type objects on params
+  code = code.replace(/<(\w+)\s+extends\s+[^>]+>/g, "<$1>"); // generic constraints
+  code = code.replace(/\bas\s+(?:const|string|number|any|React\.\w+)/g, "");
+  // Strip `import type` statements
+  code = code.replace(/^import\s+type\s+.*$/gm, "");
+  // Strip export type
+  code = code.replace(/^export\s+type\s+.*$/gm, "");
+  return code.trim();
+}
+
 function transformJsx(code) {
-  let c2 = code;
+  let c2 = sanitizeAICode(code);
   c2 = c2.replace(/^import\s+(.+?)\s+from\s+['"]([^'"]+)['"]\s*;?\s*$/gm, (match, imports, pkg) => {
     const bp = Object.keys(BLESSED).find(k => pkg === k || pkg.startsWith(k + "/")) || pkg;
     const gn = BLESSED[bp];
@@ -345,8 +367,22 @@ function transformJsx(code) {
   c2 = c2.replace(/export\s+default\s+function\s+(\w+)/g, "function $1");
   c2 = c2.replace(/export\s+default\s+/g, "window.__OMOTE_COMPONENT__ = ");
   if (!c2.includes("window.__OMOTE_COMPONENT__")) { const m = c2.match(/(?:function|const)\s+([A-Z]\w+)/g); if (m) { const last = m[m.length-1].replace(/^(?:function|const)\s+/,""); c2 += `\nwindow.__OMOTE_COMPONENT__ = ${last};`; } }
-  try { const r = transform(c2, { transforms:["jsx"], jsxRuntime:"classic", production:true }); return { code:r.code, error:null }; }
-  catch(e) { return { code:null, error:e.message }; }
+  try {
+    const r = transform(c2, { transforms:["jsx"], jsxRuntime:"classic", production:true });
+    return { code:r.code, error:null };
+  } catch(e) {
+    // Add context: show the failing line
+    const posMatch = e.message.match(/\((\d+):(\d+)\)/);
+    let ctx = "";
+    if (posMatch) {
+      const line = parseInt(posMatch[1]);
+      const lines = c2.split("\n");
+      const start = Math.max(0, line - 3);
+      const end = Math.min(lines.length, line + 2);
+      ctx = "\n\n" + lines.slice(start, end).map((l, i) => `${start + i + 1 === line ? "→ " : "  "}${start + i + 1}: ${l}`).join("\n");
+    }
+    return { code:null, error: e.message + ctx };
+  }
 }
 
 // ─── Banner System ───────────────────────────────────────────
@@ -521,7 +557,7 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled, 
       const res = await callClaude([{ role:"user", content }], sysPrompt);
       if (res.error) { setError(res.error?.message||res.error); setLoading(false); return; }
       const txt = res.content?.map(x=>x.text||"").join("")||"";
-      let html = txt.replace(/```html\n?/g,"").replace(/```\n?/g,"").trim();
+      let html = sanitizeAICode(txt);
       const userMsg = { role:"user", text:promptText, images:refImages };
       const assistMsg = { role:"assistant", text:"Stage built", html };
       setMessages([userMsg, assistMsg]);
@@ -551,7 +587,7 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled, 
       const res = await callClaude(apiM, sysPrompt);
       if (res.error) { setError(res.error?.message||res.error); setLoading(false); return; }
       const txt = res.content?.map(x=>x.text||"").join("")||"";
-      let code = txt.replace(/```(?:html|jsx|javascript|js)?\n?/g,"").replace(/```\n?/g,"").trim();
+      let code = sanitizeAICode(txt);
       const am = { role:"assistant", text:"Updated", html:format==="html"?code:undefined }; const up = [...nm, am]; setMessages(up);
       if (format === "jsx") onUpdate({ ...set, jsxCode:code, shellHtml:"", messages:up });
       else onUpdate({ ...set, shellHtml:code, jsxCode:"", messages:up });
@@ -1081,7 +1117,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.4</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk7.5</div>
       </div>
     </div>
   );
@@ -2213,7 +2249,7 @@ function HelpPage({ onTutorial }) {
         </div>
 
         <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.4</p>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk7.5</p>
           <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
