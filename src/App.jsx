@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk8.2 — Demo Stage Designer
+// OMOTE mk8.3 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -267,13 +267,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk8.2</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk8.3</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk8.2</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk8.3</span>
           </div>
         )}
       </div>
@@ -349,28 +349,31 @@ const NAMED_MAP = { "react":(n)=>`React.${n}`, "recharts":(n)=>`Recharts.${n}`, 
 
 function sanitizeAICode(raw) {
   let code = raw;
-  // Extract from code fence if present (handles jsx, tsx, javascript, js, typescript, etc.)
+  // Extract from code fence if present
   const fenceMatch = code.match(/```(?:jsx|tsx|javascript|typescript|js|ts)?\s*\n([\s\S]*?)```/);
   if (fenceMatch) code = fenceMatch[1];
   // Strip any remaining fences
   code = code.replace(/```(?:jsx|tsx|javascript|typescript|js|ts)?\s*\n?/g, "").replace(/```\s*$/gm, "");
-  // Strip TypeScript: type annotations on function params/returns, interface/type blocks, `as X`
+  // Strip TypeScript — only safe patterns that can't match valid JS
   code = code.replace(/^interface\s+\w+\s*\{[^}]*\}/gm, "");
   code = code.replace(/^type\s+\w+\s*=\s*[^;]+;/gm, "");
   code = code.replace(/:\s*React\.\w+(<[^>]*>)?/g, "");
-  code = code.replace(/:\s*(?:string|number|boolean|any|void|null|undefined|object)(?:\[\])?/g, "");
-  code = code.replace(/:\s*\{[^}]{0,200}\}/g, ""); // inline type objects on params
+  // Only strip primitive type annotations (`: string` etc.) when followed by comma, paren, or arrow — not `= {`
+  code = code.replace(/:\s*(?:string|number|boolean|any|void|null|undefined|object)(?:\[\])?\s*(?=[,)=>])/g, "");
   code = code.replace(/<(\w+)\s+extends\s+[^>]+>/g, "<$1>"); // generic constraints
   code = code.replace(/\bas\s+(?:const|string|number|any|React\.\w+)/g, "");
-  // Strip `import type` statements
   code = code.replace(/^import\s+type\s+.*$/gm, "");
-  // Strip export type
   code = code.replace(/^export\s+type\s+.*$/gm, "");
   return code.trim();
 }
 
 function transformJsx(code) {
-  let c2 = sanitizeAICode(code);
+  let c2 = code;
+  // Only strip code fences (safe for all code) — NOT TypeScript annotations
+  const fenceMatch = c2.match(/```(?:jsx|tsx|javascript|typescript|js|ts)?\s*\n([\s\S]*?)```/);
+  if (fenceMatch) c2 = fenceMatch[1];
+  c2 = c2.replace(/```(?:jsx|tsx|javascript|typescript|js|ts)?\s*\n?/g, "").replace(/```\s*$/gm, "").trim();
+
   c2 = c2.replace(/^import\s+(.+?)\s+from\s+['"]([^'"]+)['"]\s*;?\s*$/gm, (match, imports, pkg) => {
     const bp = Object.keys(BLESSED).find(k => pkg === k || pkg.startsWith(k + "/")) || pkg;
     const gn = BLESSED[bp];
@@ -1148,7 +1151,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk8.2</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk8.3</div>
       </div>
     </div>
   );
@@ -2280,7 +2283,7 @@ function HelpPage({ onTutorial }) {
         </div>
 
         <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk8.2</p>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk8.3</p>
           <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
