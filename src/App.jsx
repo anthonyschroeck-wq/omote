@@ -534,11 +534,57 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled, 
   const [loading, setLoading] = useState(false); const [error, setError] = useState(null);
   const [editBanner, setEditBanner] = useState(false); const [bannerDraft, setBannerDraft] = useState(set.banner || "");
   const [htmlDrag, setHtmlDrag] = useState(false);
+  const [figmaDrag, setFigmaDrag] = useState(false);
+  const [figmaTab, setFigmaTab] = useState("file"); // file, paste
+  const [pasteContent, setPasteContent] = useState("");
   const [chatWidth, setChatWidth] = useState(420);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
   const chatEnd = useRef(null);
   const jsxFileRef = useRef(null);
+  const figmaFileRef = useRef(null);
+
+  // Figma import handler — accepts SVG, HTML, or image files
+  const handleFigmaImport = (files) => {
+    const f = files[0]; if (!f) return;
+    const ext = f.name.split(".").pop()?.toLowerCase();
+    const r = new FileReader();
+
+    if (ext === "svg") {
+      r.onload = ev => {
+        const svgContent = ev.target.result;
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff;overflow:hidden}svg{max-width:100%;max-height:100vh;height:auto}</style></head><body>${svgContent}</body></html>`;
+        onUpdate({ ...set, shellHtml: html, jsxCode: "", sourceFile: f.name, method: "figma-svg" });
+        setPhase("canvas");
+      };
+      r.readAsText(f);
+    } else if (ext === "html" || ext === "htm") {
+      r.onload = ev => {
+        onUpdate({ ...set, shellHtml: ev.target.result, jsxCode: "", sourceFile: f.name, method: "figma-html" });
+        setPhase("canvas");
+      };
+      r.readAsText(f);
+    } else if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) {
+      r.onload = ev => {
+        const dataUrl = ev.target.result;
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff;overflow:hidden}img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body><img src="${dataUrl}" alt="Figma export"/></body></html>`;
+        onUpdate({ ...set, shellHtml: html, jsxCode: "", sourceFile: f.name, method: "figma-image" });
+        setPhase("canvas");
+      };
+      r.readAsDataURL(f);
+    }
+  };
+
+  const handleFigmaPaste = (htmlStr) => {
+    if (!htmlStr?.trim()) return;
+    // Wrap pasted HTML/CSS in a full document shell
+    const needsWrap = !htmlStr.trim().toLowerCase().startsWith("<!doctype") && !htmlStr.trim().toLowerCase().startsWith("<html");
+    const html = needsWrap
+      ? `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{box-sizing:border-box}</style></head><body>${htmlStr}</body></html>`
+      : htmlStr;
+    onUpdate({ ...set, shellHtml: html, jsxCode: "", sourceFile: "figma-paste", method: "figma-paste" });
+    setPhase("canvas");
+  };
   const csvFileRef = useRef(null);
   const imgFileRef = useRef(null);
   const sample = Array.isArray(csvData) && csvData.length > 0 ? csvData[0] : null;
@@ -641,17 +687,22 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled, 
       <div style={{ padding:"36px 28px", maxWidth:800 }}>
         <h3 style={{ ...ds(28), color:cl.ink, marginBottom:8 }}>Build Your Stage</h3>
         <p style={{ ...ui(16,300), color:cl.ink60, marginBottom:32 }}>Choose how to create your demo environment.</p>
-        <div style={{ display:"flex", gap:16 }}>
-          <div onClick={()=>{ if(aiEnabled) setPhase("describe"); }} style={{ flex:1, padding:"32px 24px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:aiEnabled?"pointer":"not-allowed", textAlign:"center", transition:"all 0.2s", opacity:aiEnabled?1:0.4 }} onMouseEnter={e=>{if(aiEnabled)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
+        <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
+          <div onClick={()=>{ if(aiEnabled) setPhase("describe"); }} style={{ flex:1, minWidth:200, padding:"32px 24px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:aiEnabled?"pointer":"not-allowed", textAlign:"center", transition:"all 0.2s", opacity:aiEnabled?1:0.4 }} onMouseEnter={e=>{if(aiEnabled)e.currentTarget.style.borderColor=cl.navy}} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
             <OIcon name="stages" size={32} color={cl.navy}/>
             <div style={{ ...ui(18,500), color:cl.ink, marginTop:12, marginBottom:6 }}>Build with AI</div>
             <div style={{ ...ui(14,300), color:cl.ink60 }}>Describe your demo, upload reference screenshots, and let AI assemble it</div>
             {!aiEnabled && <div style={{ ...mono(9), color:cl.ink40, marginTop:10 }}>Admin Only</div>}
           </div>
-          <div onClick={()=>setPhase("jsx")} style={{ flex:1, padding:"32px 24px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:"pointer", textAlign:"center", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
+          <div onClick={()=>setPhase("jsx")} style={{ flex:1, minWidth:200, padding:"32px 24px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:"pointer", textAlign:"center", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
             <div style={{ fontSize:32, opacity:0.5 }}>⚛</div>
             <div style={{ ...ui(18,500), color:cl.ink, marginTop:12, marginBottom:6 }}>Upload JSX</div>
             <div style={{ ...ui(14,300), color:cl.ink60 }}>Bring a React component — Omote provides the runtime</div>
+          </div>
+          <div onClick={()=>setPhase("figma")} style={{ flex:1, minWidth:200, padding:"32px 24px", border:`1px solid ${cl.borderLight}`, background:cl.surface, cursor:"pointer", textAlign:"center", transition:"all 0.2s" }} onMouseEnter={e=>e.currentTarget.style.borderColor=cl.navy} onMouseLeave={e=>e.currentTarget.style.borderColor=cl.borderLight}>
+            <svg viewBox="0 0 38 57" width="28" height="28" style={{ opacity:0.6 }}><path d="M19 28.5a9.5 9.5 0 1 1 0-19 9.5 9.5 0 0 1 0 19z" fill={cl.navy}/><path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill={cl.navy} opacity="0.7"/><path d="M19 0v19h9.5a9.5 9.5 0 0 0 0-19H19z" fill={cl.navy} opacity="0.5"/><path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill={cl.navy} opacity="0.6"/><path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill={cl.navy} opacity="0.8"/></svg>
+            <div style={{ ...ui(18,500), color:cl.ink, marginTop:12, marginBottom:6 }}>Import from Figma</div>
+            <div style={{ ...ui(14,300), color:cl.ink60 }}>Upload exported SVG, HTML, or a screenshot from your Figma design</div>
           </div>
         </div>
       </div>
@@ -749,6 +800,94 @@ function StageBuilder({ set, csvData, columns, onUpdate, onComplete, aiEnabled, 
           <div style={{ ...mono(8), color:cl.ink40, marginBottom:8 }}>Blessed Libraries</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>{["React 18","Recharts","D3","Lodash","Tailwind CSS"].map(lib=><span key={lib} style={{ ...mono(8), padding:"3px 8px", background:cl.navyWash, color:cl.navy }}>{lib}</span>)}</div>
         </div>
+      </div>
+    );
+  }
+
+  // ═══ Phase: Figma Import ═══
+  if (phase === "figma") {
+    return (
+      <div style={{ padding:"36px 28px", maxWidth:600 }}>
+        <button onClick={()=>setPhase("choose")} style={{ background:"none", border:"none", cursor:"pointer", ...mono(10), color:cl.ink60, marginBottom:20 }}>&#8592; Back</button>
+
+        {/* Tab switcher */}
+        <div style={{ display:"flex", gap:0, marginBottom:24, border:`1px solid ${cl.borderLight}` }}>
+          {[
+            { id:"file", label:"Upload File" },
+            { id:"paste", label:"Paste HTML/CSS" },
+          ].map(t => (
+            <button key={t.id} onClick={()=>setFigmaTab(t.id)} style={{
+              flex:1, padding:"10px 0", background:figmaTab===t.id ? cl.navyWash : "transparent",
+              border:"none", ...mono(10), color:figmaTab===t.id ? cl.navy : cl.ink40,
+              cursor:"pointer", borderRight:t.id==="file" ? `1px solid ${cl.borderLight}` : "none",
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {figmaTab === "file" && (
+          <>
+            <div
+              onDragOver={e=>{e.preventDefault();setFigmaDrag(true)}}
+              onDragLeave={()=>setFigmaDrag(false)}
+              onDrop={e=>{e.preventDefault();setFigmaDrag(false);handleFigmaImport(Array.from(e.dataTransfer?.files||[]))}}
+              onClick={()=>figmaFileRef.current?.click()}
+              style={{ padding:"56px 40px", border:`2px dashed ${figmaDrag?cl.navy:cl.border}`, cursor:"pointer", textAlign:"center", marginBottom:20 }}
+            >
+              <input ref={figmaFileRef} type="file" accept=".svg,.html,.htm,.png,.jpg,.jpeg,.webp,.gif" onChange={e=>{if(e.target.files?.[0])handleFigmaImport(Array.from(e.target.files))}} style={{ display:"none" }}/>
+              <svg viewBox="0 0 38 57" width="28" height="28" style={{ marginBottom:12, opacity:0.5 }}><path d="M19 28.5a9.5 9.5 0 1 1 0-19 9.5 9.5 0 0 1 0 19z" fill={cl.ink60}/><path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill={cl.ink60} opacity="0.7"/><path d="M19 0v19h9.5a9.5 9.5 0 0 0 0-19H19z" fill={cl.ink60} opacity="0.5"/><path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill={cl.ink60} opacity="0.6"/><path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill={cl.ink60} opacity="0.8"/></svg>
+              <p style={{ ...mono(11), color:cl.ink60, marginBottom:6 }}>Drop Figma export here</p>
+              <p style={{ ...mono(9), color:cl.ink40 }}>SVG, HTML, PNG, JPG</p>
+            </div>
+
+            <div style={{ padding:"16px 20px", background:cl.surface, border:`1px solid ${cl.borderLight}` }}>
+              <div style={{ ...mono(8), color:cl.ink40, marginBottom:10 }}>How to export from Figma</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                  <div style={{ ...mono(8), color:cl.navy, background:cl.navyWash, padding:"2px 6px", flexShrink:0 }}>SVG</div>
+                  <span style={{ ...ui(13,300), color:cl.ink60 }}>Select frame &#8594; Export panel &#8594; SVG format &#8594; Export. Best for vector designs.</span>
+                </div>
+                <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                  <div style={{ ...mono(8), color:cl.navy, background:cl.navyWash, padding:"2px 6px", flexShrink:0 }}>PNG</div>
+                  <span style={{ ...ui(13,300), color:cl.ink60 }}>Select frame &#8594; Export panel &#8594; PNG 2x &#8594; Export. Good for pixel-perfect mockups.</span>
+                </div>
+                <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                  <div style={{ ...mono(8), color:cl.navy, background:cl.navyWash, padding:"2px 6px", flexShrink:0 }}>HTML</div>
+                  <span style={{ ...ui(13,300), color:cl.ink60 }}>Use Dev Mode &#8594; Copy as Code, or export via a Figma-to-HTML plugin.</span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {figmaTab === "paste" && (
+          <>
+            <div style={{ marginBottom:12 }}>
+              <div style={{ ...ui(14,400), color:cl.ink, marginBottom:6 }}>Paste HTML/CSS from Figma Dev Mode</div>
+              <div style={{ ...ui(13,300), color:cl.ink60, marginBottom:12 }}>In Figma, select a frame, open Dev Mode, and copy the generated HTML/CSS code.</div>
+              <textarea
+                value={pasteContent}
+                onChange={e=>setPasteContent(e.target.value)}
+                placeholder={"<div style=\"...\">\n  <!-- Paste Figma HTML/CSS here -->\n</div>"}
+                style={{
+                  width:"100%", minHeight:200, padding:"14px 16px",
+                  border:`1px solid ${cl.border}`, background:cl.bg,
+                  fontFamily:"'IBM Plex Mono', monospace", fontSize:12, color:cl.ink,
+                  outline:"none", resize:"vertical", lineHeight:1.6,
+                }}
+              />
+            </div>
+            <button
+              onClick={()=>handleFigmaPaste(pasteContent)}
+              disabled={!pasteContent.trim()}
+              style={{
+                width:"100%", padding:"12px 0", background:pasteContent.trim() ? cl.ink : cl.border,
+                color:pasteContent.trim() ? cl.bg : cl.ink40,
+                border:"none", ...mono(10), cursor:pasteContent.trim() ? "pointer" : "not-allowed",
+                letterSpacing:"0.08em",
+              }}
+            >Import to Stage</button>
+          </>
+        )}
       </div>
     );
   }
