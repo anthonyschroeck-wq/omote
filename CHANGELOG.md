@@ -2,6 +2,11 @@
 
 All notable changes to Omote are documented here.
 
+## mk8.5 — 2026-03-10
+- Fix JSX import: collapse multi-line imports before transpile (prevents "Cannot use import outside a module")
+- Strip side-effect imports (import './styles.css') instead of crashing
+- Fix default+named import order (import React, { useState } now correctly preserves default)
+
 ## mk8.4 — 2026-03-08
 - Version bump test: validate centralized PAT push from Batcave project
 
@@ -23,7 +28,6 @@ All notable changes to Omote are documented here.
 - PerformanceShell component for isolated tab rendering
 - Omote stage mark favicon added to index.html
 - Stage-level custom favicon for performance tabs
-
 ## mk7.5 — 2026-03-07
 - Fix AI Builder transpile crash: sanitizeAICode strips fences, TypeScript annotations
 - System prompt reinforced: explicit no-TypeScript instruction
@@ -86,3 +90,4 @@ All notable changes to Omote are documented here.
 - Cue save ID detection fix
 - Rich banner editor (presets, icons, alignment, live preview)
 - Cue description field, banner serialized as JSON
+

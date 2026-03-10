@@ -8,7 +8,7 @@ import SAMPLE_JSX from "./sample-aura.jsx?raw";
 import SAMPLE_JSX_ROADMAP from "./sample-aura-roadmap.jsx?raw";
 
 // ═══════════════════════════════════════════════════════════════
-// OMOTE mk8.4 — Demo Stage Designer
+// OMOTE mk8.5 — Demo Stage Designer
 // ═══════════════════════════════════════════════════════════════
 
 const CREAM = "#F5F0E8"; const NAVY = "#6B7B8D"; const DK = "#1A1A1A"; const WARM = "#B8B0A4";
@@ -267,13 +267,13 @@ function Sidebar({ expanded, setExpanded, screen, onNavigate, user, stages, acti
               <div style={{ ...ui(13,500), color:cl.ink }}>{user?.name}</div>
               <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.3, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="0.3"}><OIcon name="logout" size={14} color={cl.ink40}/></button>
             </div>
-            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk8.4</div>
+            <div style={{ ...mono(8), color:cl.ink20 }}>{user?.role} · mk8.5</div>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
             <div style={{ width:24, height:24, borderRadius:"50%", background:cl.navyWash, display:"flex", alignItems:"center", justifyContent:"center", ...mono(10), color:cl.navy }}>{user?.name?.[0]}</div>
             <button onClick={onLogout} title="Sign Out" style={{ background:"none", border:"none", cursor:"pointer", padding:2, opacity:0.25, transition:"opacity 0.15s" }} onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="0.25"}><OIcon name="logout" size={12} color={cl.ink40}/></button>
-            <span style={{ ...mono(6), color:cl.ink20 }}>mk8.4</span>
+            <span style={{ ...mono(6), color:cl.ink20 }}>mk8.5</span>
           </div>
         )}
       </div>
@@ -374,18 +374,23 @@ function transformJsx(code) {
   if (fenceMatch) c2 = fenceMatch[1];
   c2 = c2.replace(/```(?:jsx|tsx|javascript|typescript|js|ts)?\s*\n?/g, "").replace(/```\s*$/gm, "").trim();
 
+  // Collapse multi-line imports into single lines
+  c2 = c2.replace(/^import\s+[\s\S]*?from\s+['"][^'"]+['"]\s*;?\s*$/gm, m => m.replace(/\n\s*/g, " "));
+  // Strip side-effect imports (import './foo.css')
+  c2 = c2.replace(/^import\s+['"][^'"]+['"]\s*;?\s*$/gm, m => `// [Omote] Stripped side-effect: ${m.trim()}`);
+
   c2 = c2.replace(/^import\s+(.+?)\s+from\s+['"]([^'"]+)['"]\s*;?\s*$/gm, (match, imports, pkg) => {
     const bp = Object.keys(BLESSED).find(k => pkg === k || pkg.startsWith(k + "/")) || pkg;
     const gn = BLESSED[bp];
     if (!gn) return `// [Omote] Unsupported: ${pkg}`;
     const def = imports.match(/^(\w+)$/);
     if (def) return `const ${def[1]} = ${gn};`;
+    const dn = imports.match(/^(\w+)\s*,\s*\{([^}]+)\}/);
+    if (dn) { const r = NAMED_MAP[bp] || ((n)=>`${gn}.${n}`); return `const ${dn[1]} = ${gn};\n` + dn[2].split(",").map(n=>{const [o,a]=n.trim().split(/\s+as\s+/);return `const ${(a||o).trim()} = ${r(o.trim())};`}).join("\n"); }
     const named = imports.match(/\{([^}]+)\}/);
     if (named) { const r = NAMED_MAP[bp] || ((n)=>`${gn}.${n}`); return named[1].split(",").map(n=>{const [o,a]=n.trim().split(/\s+as\s+/);return `const ${(a||o).trim()} = ${r(o.trim())};`}).join("\n"); }
     const wild = imports.match(/\*\s+as\s+(\w+)/);
     if (wild) return `const ${wild[1]} = ${gn};`;
-    const dn = imports.match(/^(\w+)\s*,\s*\{([^}]+)\}/);
-    if (dn) { const r = NAMED_MAP[bp] || ((n)=>`${gn}.${n}`); return `const ${dn[1]} = ${gn};\n` + dn[2].split(",").map(n=>`const ${n.trim()} = ${r(n.trim())};`).join("\n"); }
     return `const ${imports.trim()} = ${gn};`;
   });
   c2 = c2.replace(/export\s+default\s+function\s+(\w+)/g, "function $1");
@@ -1290,7 +1295,7 @@ function Login({ onLogin }) {
         {err && <div style={{padding:"8px 12px",marginBottom:12,background:"rgba(139,77,77,0.06)",border:"1px solid rgba(139,77,77,0.15)",...ui(14,400),color:"#8B4D4D",textAlign:"center"}}>{err}</div>}
         <button onClick={go} disabled={ld||!email||!pw} style={{width:"100%",padding:"13px 0",background:(email&&pw)?DK:"#CCC6BA",color:(email&&pw)?CREAM:WARM,border:"none",...mono(11),letterSpacing:"0.15em",cursor:ld?"wait":(email&&pw)?"pointer":"not-allowed",marginBottom:8}}>{ld?"Entering...":"Sign In"}</button>
         <button disabled style={{width:"100%",padding:"11px 0",background:"transparent",border:"1px solid #DDD7CD",...mono(10),color:"#CCC6BA",cursor:"not-allowed",marginBottom:8}}>SSO — Coming Soon</button>
-        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk8.4</div>
+        <div style={{...mono(8),color:"#CCC6BA",marginTop:20}}>mk8.5</div>
       </div>
     </div>
   );
@@ -2422,7 +2427,7 @@ function HelpPage({ onTutorial }) {
         </div>
 
         <div style={{ padding:"16px 20px", background:cl.goldWash, border:"1px solid rgba(140,122,60,0.15)", marginBottom:16 }}>
-          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk8.4</p>
+          <p style={{ ...ui(13,400), color:cl.gold, marginBottom:2 }}>Public alpha · mk8.5</p>
           <p style={{ ...ui(12,300), color:cl.gold }}>Some features are in active development. Stages and settings persist via Supabase. AI Builder requires the feature flag to be enabled by a Super-Admin.</p>
         </div>
 
