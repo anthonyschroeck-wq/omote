@@ -2,6 +2,13 @@
 
 All notable changes to Omote are documented here.
 
+## mk8.6 — 2026-03-10
+- Dynamic CDN imports via esm.sh: non-blessed packages (Mantine, Tabler, framer-motion, etc.) auto-resolve from esm.sh CDN
+- Async-aware iframe loader: sandbox supports both sync (blessed) and async (CDN) execution paths
+- Blessed packages (react, react-dom, recharts, lodash, d3) remain instant from runtime globals
+- Trailing comma in named imports no longer produces empty identifiers
+- Side-effect local imports stripped cleanly; CDN URLs preserved
+
 ## mk8.5 — 2026-03-10
 - Fix JSX import: collapse multi-line imports before transpile (prevents "Cannot use import outside a module")
 - Strip side-effect imports (import './styles.css') instead of crashing
@@ -9,7 +16,6 @@ All notable changes to Omote are documented here.
 
 ## mk8.4 — 2026-03-08
 - Version bump test: validate centralized PAT push from Batcave project
-
 ## mk7.9 — 2026-03-07
 - Fix performance new-tab crash (React error #300): move hash detection to main.jsx entry point
 
@@ -90,4 +96,5 @@ All notable changes to Omote are documented here.
 - Cue save ID detection fix
 - Rich banner editor (presets, icons, alignment, live preview)
 - Cue description field, banner serialized as JSON
+
 
